@@ -111,6 +111,7 @@ h2 { font: 600 1.05rem/1.3 var(--fd); margin: 0; }
 
 .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.badge.dev { border-color: var(--accent); color: var(--accent); }
 .badge {
   font-size: .78rem; font-weight: 600; color: var(--muted);
   background: none; border: 1px solid var(--line); border-radius: 99px;
@@ -281,6 +282,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   var M = [];                        // anggota (mentah)
   var P = [];                        // pembayaran iuran
   var X = [];                        // pengeluaran (termasuk pengembalian)
+  var DEV_UID = 'bjA3cKodmmfTmgh7tjWPdQoLmKb2';   // pemilik aplikasi; izin sebenarnya ada di firestore.rules
+  var isDev = false;
   var KODE = '', RNAMA = '', pesanRoom = '', ROLES = {}, isHost = false, fdb = null, unsubRoles = null;
   var ALFABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // tanpa I, O (mirip 1, 0)
   var LOG = [];                      // riwayat perubahan
@@ -423,7 +426,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function simpan(isi, aksi, ket) {
     var b = db.batch();
     isi(b);
-    b.set(db.collection('log').doc(), { ts: Date.now(), aksi: aksi, ket: ket, kat: kategori(aksi) });
+    b.set(db.collection('log').doc(), { ts: Date.now(), aksi: aksi, ket: (isDev ? '[Dev] ' : '') + ket, kat: kategori(aksi) });
     return tulis(b.commit());
   }
 
@@ -489,12 +492,16 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (tombol) tombol.textContent = 'Tersalin';
   }
 
+  function namaPeran() { return isDev ? 'Dev' : isHost ? 'Host' : canEdit ? 'Bendahara' : 'Hanya lihat'; }
+
   function terapkanPeran() {
     var u = auth && auth.currentUser;
     var p = u ? ROLES[u.uid] : '';
-    canEdit = p === 'host' || p === 'bendahara';
-    isHost = p === 'host';
-    $('#role').textContent = isHost ? 'Host' : canEdit ? 'Bendahara' : 'Hanya lihat';
+    isDev = !!u && u.uid === DEV_UID;
+    canEdit = isDev || p === 'host' || p === 'bendahara';
+    isHost = isDev || p === 'host';
+    $('#role').textContent = namaPeran();
+    $('#role').className = 'badge' + (isDev ? ' dev' : '');
     if (!canEdit && tab === 'catat') tab = 'home';
     if (!canEdit && (sub === 'anggota' || sub === 'iuran' || sub === 'data')) sub = '';
     if (!isHost && sub === 'pengurus') sub = '';
@@ -640,7 +647,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
   function alihHost(uid) {
     var u = auth.currentUser;
-    if (!arm('th' + uid) || ROLES[uid] !== 'bendahara' || !u) return;
+    if (isDev || !arm('th' + uid) || ROLES[uid] !== 'bendahara' || !u) return;
     var nr = salinanPeran(), nm = nr.label[uid] || 'Bendahara';
     nr[uid] = 'host';
     nr[u.uid] = 'bendahara';
@@ -784,7 +791,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     derive();
     keepEd();
     if (tab === 'set') {
-      if (sub === 'anggota' || sub === 'room' || sub === 'pengurus') return;   // halaman berisi isian jangan dibangun ulang saat data berubah
+      if (sub === 'anggota' || sub === 'room' || sub === 'pengurus' || sub === 'semua') return;   // halaman berisi isian jangan dibangun ulang saat data berubah
       if (sub === 'iuran') { updIuran(); return; }
       fSet();
       return;
@@ -989,7 +996,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (a === 'ckd') { salin(KODE, b); return; }
     if (a === 'ctl') { salin(location.origin + location.pathname + '?r=' + KODE, b); return; }
     if (a === 'cuid') { salin(auth.currentUser.uid, b); return; }
-    if (a === 'gr') { var rr = daftarRoom().filter(function (x) { return x.kode === id; })[0]; pilihRoom(id, rr && rr.nama); return; }
+    if (a === 'gr') { var rr = daftarRoom().filter(function (x) { return x.kode === id; })[0]; pilihRoom(id, (rr && rr.nama) || b.getAttribute('data-nm')); return; }
     if (a === 'jr') { masukRoom(); return; }
     if (a === 'br') { buatRoom(b); return; }
     if (a === 'kroom') {
@@ -1434,7 +1441,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   /* =========================================================
    * Pengaturan: daftar -> sub-halaman
    * ========================================================= */
-  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Iuran', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang' };
+  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Iuran', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room' };
   var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik', 'kaca'];
   var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4', kaca: '#0B1020' };
   var UKURAN = ['75', '88', '100', '118'];
@@ -1447,6 +1454,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     tampilan: '<svg viewBox="0 0 24 24"><path d="M4 7V5h16v2M12 5v14M9 19h6"/></svg>',
     tentang: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
     room: '<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg>',
+    semua: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
     data: '<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>',
     pengurus: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>'
   };
@@ -1483,7 +1491,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       var u0 = auth && auth.currentUser;
       var it = [['akun', 'Akun', u0 ? esc(u0.email || 'Sudah masuk') : 'Belum masuk'],
                 ['room', 'Room', KODE ? esc((RNAMA || '') + ' · ' + KODE) : 'Masuk atau buat room']];
-      if (isHost) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
+      if (isDev) it.push(['semua', 'Semua room', 'Khusus Dev: lihat dan masuk ke room mana pun']);
+      if (isHost && !isDev) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
       if (canEdit) {
         it.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
         it.push(['iuran', 'Iuran', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
@@ -1494,11 +1503,13 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       h = '<div class="smenu">' + it.map(function (x) {
         return '<button type="button" data-go="' + x[0] + '">' + IC[x[0]] + '<span><b>' + x[1] + '</b><small>' + esc(x[2]) + '</small></span></button>';
       }).join('') + '</div>';
+    } else if (sub === 'semua') {
+      h = '<div class="card"><p class="sm">Semua room di Kaskita. Ketuk untuk masuk dengan hak penuh. Semua perubahanmu tercatat [Dev] di riwayat room.</p><div id="dvList"><p class="sm">Memuat…</p></div></div>';
     } else if (sub === 'akun') {
       var u1 = auth && auth.currentUser;
       h = '<div class="card">' + (u1
         ? '<p>' + esc(u1.email || 'Sudah masuk') + '</p>' +
-          '<p class="sm">Peran di room ini: <b>' + (isHost ? 'Host' : canEdit ? 'Bendahara' : 'Hanya lihat') + '</b></p>' +
+          '<p class="sm">Peran di room ini: <b>' + namaPeran() + '</b></p>' +
           '<button class="btn ghost" type="button" data-a="out">' + (armed === 'out' ? 'Yakin keluar?' : 'Keluar') + '</button>'
         : '<p class="sm">Masuk atau daftar akun untuk membuat room atau menjadi pengurus. Anggota biasa tidak perlu akun.</p>' +
           '<button class="btn" type="button" data-a="in">Masuk atau daftar</button>') + '</div>' +
@@ -1624,7 +1635,25 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
       '</h2>' + (KODE ? '<button class="lnk" type="button" data-a="sback">&larr; Kembali</button>' : '') + '</div>' + h + '</div>';
     if (sub === 'room') cekDataLama();
+    if (sub === 'semua') muatSemuaRoom();
     if (sub === 'iuran') { maskRupiah($('#cn')); maskRupiah($('#cb')); updIuran(); }
+  }
+
+  /** Khusus Dev: daftar semua room (aturan Firestore menolak siapa pun selain Dev). */
+  function muatSemuaRoom() {
+    if (!isDev || !fdb) return;
+    fdb.collection('groups').get().then(function (s) {
+      var box = $('#dvList'); if (!box) return;
+      var a = s.docs.map(function (d) { return { kode: d.id, nama: (d.data() || {}).nama || d.id }; })
+        .sort(function (x, y) { return x.nama.localeCompare(y.nama, 'id'); });
+      box.innerHTML = a.length
+        ? '<p class="sm">' + a.length + ' room</p><div class="smenu">' + a.map(function (r) {
+            return '<button type="button" data-a="gr" data-id="' + esc(r.kode) + '" data-nm="' + esc(r.nama) + '">' + IC.room + '<span><b>' + esc(r.nama) + '</b><small>' + esc(r.kode) + (r.kode === KODE ? ' · sedang dibuka' : '') + '</small></span></button>';
+          }).join('') + '</div>'
+        : '<p class="sm">Belum ada room.</p>';
+    }).catch(function () {
+      var box = $('#dvList'); if (box) box.innerHTML = '<p class="err">Gagal memuat. Pastikan aturan Firestore versi Dev sudah dipublikasikan.</p>';
+    });
   }
 
   /** Daftar iuran di sub-halaman Iuran; dibangun ulang tanpa menyentuh kolom isian. */
