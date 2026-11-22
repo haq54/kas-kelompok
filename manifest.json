@@ -1,0 +1,19 @@
+{
+  "name": "Kas Kelas",
+  "short_name": "Kas Kelas",
+  "description": "Pencatatan kas kelas dan kelompok",
+  "lang": "id",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F4F1",
+  "theme_color": "#1F4E79",
+  "icons": [
+    {"src": "icon_192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon_512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon_maskable_512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icon_monochrome_512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome"}
+  ]
+}
