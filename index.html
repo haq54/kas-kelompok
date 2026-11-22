@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <script>try { var _t = localStorage.getItem('kk-tema'); if (['light', 'dark', 'hitam', 'biru', 'mawar'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kas Kelas</title>
-<meta name="description" content="Pencatatan kas kelas">
-<meta name="theme-color" content="#1F4E79">
+<title>Kaskita</title>
+<meta name="description" content="Kaskita: pencatatan kas kelompok">
+<meta name="theme-color" content="#F2F4F1">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon_192x192.png">
 <link rel="apple-touch-icon" href="icon_192x192.png">
@@ -204,7 +204,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 <body>
 <div class="wrap">
   <header>
-    <h1 id="ttl">Kas Kelas</h1>
+    <h1 id="ttl">Kaskita</h1>
     <div class="hb">
       <button type="button" class="badge" id="gear">Pengaturan</button>
       <button type="button" class="badge" id="role">Memuat…</button>
@@ -219,7 +219,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
 <div id="lgn" hidden>
   <form id="lgF" class="card lgc">
-    <h1>Kas Kelas</h1>
+    <h1>Kaskita</h1>
     <p class="sm">Masuk sebagai bendahara untuk mengubah data kas.</p>
     <label class="lab" for="lgE">Email</label>
     <input id="lgE" type="email" autocomplete="username" placeholder="nama@email.com" required>
@@ -804,7 +804,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
     $('#sum').innerHTML =
       '<div class="card">' +
-        '<span class="lab">Saldo kas kelas</span>' +
+        '<span class="lab">Saldo kas</span>' +
         '<span class="big mono ' + (saldo < 0 ? 'out' : '') + '">' + rp(saldo) + '</span>' +
         '<p class="sm">Uang di tangan bendahara: ' + rp(masuk - keluar) +
           (titipan > 0 ? ' &middot; titipan anggota: ' + rp(titipan) : '') + '</p>' +
@@ -919,7 +919,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
                    (armed === 'dm' + m.id ? 'Yakin hapus?' : 'Hapus anggota') + '</button>') +
            '</div>' +
            (m.aktif === false && m.kredit > 0
-             ? '<p class="sm">Lebihan ' + rp(m.kredit) + ' masuk ke kas kelas karena anggota ini nonaktif.</p>'
+             ? '<p class="sm">Lebihan ' + rp(m.kredit) + ' masuk ke kas karena anggota ini nonaktif.</p>'
              : '');
     }
     return h + '</div>';
@@ -1089,7 +1089,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function teksPengingat() {
     var belum = D.filter(function (m) { return isAktif(m) && m.kurang > 0; }).sort(byNama);
     return belum.length
-      ? 'Pengingat kas kelas (' + bln(cur()) + '). Yang belum lunas:\n' +
+      ? 'Pengingat kas (' + bln(cur()) + '). Yang belum lunas:\n' +
         belum.map(function (m, i) {
           return (i + 1) + '. ' + m.nama + (m.nim ? ' (' + m.nim + ')' : '') + ' - kurang ' + rp(m.kurang);
         }).join('\n') + '\nTerima kasih.'
@@ -1424,7 +1424,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (tm === 'auto') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', tm);
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute('content', tm === 'auto' ? '#1F4E79' : TEMA_BAR[tm]);
+    if (m) m.setAttribute('content', tm === 'auto' ? '#F2F4F1' : TEMA_BAR[tm]);
     return tm;
   }
   function applyUkuran() {
@@ -1578,9 +1578,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             UKURAN.map(function (k) {
               return '<button type="button" data-u="' + k + '" aria-pressed="' + (k === uk) + '">' + un[k] + '</button>';
             }).join('') + '</div>' +
-          '<p class="sm">Contoh: saldo kas kelas <b class="mono">Rp 1.250.000</b></p></div>';
+          '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kas Kelas</b> &middot; versi 2.1</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.2</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -1741,7 +1741,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       } else if (!s.metadata.fromCache) {
         pesanRoom = 'Room ' + KODE + ' tidak ditemukan. Periksa kodenya.';
         lupakanRoom(KODE); lsSet('kk-room-aktif', '');
-        KODE = ''; db = null; RNAMA = ''; $('#ttl').textContent = 'Kas Kelas';
+        KODE = ''; db = null; RNAMA = ''; $('#ttl').textContent = 'Kaskita';
         openSet('room');
       }
     }, function () {});
