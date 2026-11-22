@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<script>try { var _t = localStorage.getItem('kk-tema'); if (['light', 'dark', 'hitam', 'biru', 'mawar'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; } catch (e) {}</script>
+<script>try { var _t = localStorage.getItem('kk-tema'); if (['light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik', 'kaca'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kaskita</title>
 <meta name="description" content="Kaskita: pencatatan kas kelompok">
@@ -67,6 +67,29 @@
   --surface: #FBF3F1; --field: #F5E8E5; --ink: #2E1D1D; --muted: #6B5453;
   --line: #E2CBC8; --accent: #8C2F39; --accent-ink: #FFFFFF; --in: #176B42; --in-soft: #DDEEDF;
   --out: #A8322A; --out-soft: #F6DAD5; --warn: #7A5200; --warn-soft: #F7E8C3;
+}
+:root[data-theme="eukaliptus"] {
+  color-scheme: light;
+  --bg: #EBF0EC; --surface: #F9FBF9; --field: #F0F4F1; --ink: #1B2620; --muted: #5D6E64;
+  --line: #D7E2D9; --accent: #2C3E35; --accent-ink: #FFFFFF; --in: #1F6B4A; --in-soft: #DDEEE3;
+  --out: #A8402A; --out-soft: #FBECE8; --warn: #7A5200; --warn-soft: #F7EBC9;
+}
+:root[data-theme="nordik"] {
+  color-scheme: light;
+  --bg: #EDF1F4; --surface: #FFFFFF; --field: #F3F6F8; --ink: #16212C; --muted: #5E6E7E;
+  --line: #DCE3E8; --accent: #1E4E5F; --accent-ink: #FFFFFF; --in: #1A6B50; --in-soft: #E0F1EA;
+  --out: #A8402A; --out-soft: #FCEAE6; --warn: #7A5200; --warn-soft: #F7EBC9;
+}
+:root[data-theme="kaca"] {
+  color-scheme: dark;
+  --bg: #070A12; --bg-img: radial-gradient(120% 55% at 85% 105%, #0C2F73 0%, transparent 65%), linear-gradient(180deg, #0B1020 0%, #070A12 100%);
+  --surface: rgba(34, 48, 82, .55); --field: rgba(8, 12, 24, .55); --ink: #E9EEFB; --muted: #A4B1CE;
+  --line: rgba(150, 175, 230, .24); --accent: #6FA8FF; --accent-ink: #06101F; --in: #6FE0A6; --in-soft: rgba(60, 190, 130, .16);
+  --out: #FF9D8E; --out-soft: rgba(255, 110, 90, .16); --warn: #F0D58E; --warn-soft: rgba(240, 213, 142, .15);
+}
+:root[data-theme="kaca"] .card, :root[data-theme="kaca"] nav, :root[data-theme="kaca"] .smenu {
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
 }
 
 /* ===== Dasar ===== */
@@ -1412,8 +1435,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
    * Pengaturan: daftar -> sub-halaman
    * ========================================================= */
   var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Iuran', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang' };
-  var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar'];
-  var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3' };
+  var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik', 'kaca'];
+  var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4', kaca: '#0B1020' };
   var UKURAN = ['75', '88', '100', '118'];
   var lsGet = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var lsSet = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -1578,9 +1601,12 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         dark: 'linear-gradient(90deg,#0F1613 55%,#18221E 55% 80%,#7FB0E0 80%)',
         hitam: 'linear-gradient(90deg,#000 55%,#111413 55% 80%,#7FB0E0 80%)',
         biru: 'linear-gradient(90deg,#222F4C 55%,#26344F 55% 80%,#9DB8E0 80%)',
-        mawar: 'linear-gradient(90deg,#F3E4E1 55%,#FBF3F1 55% 80%,#8C2F39 80%)'
+        mawar: 'linear-gradient(90deg,#F3E4E1 55%,#FBF3F1 55% 80%,#8C2F39 80%)',
+        eukaliptus: 'linear-gradient(90deg,#EBF0EC 55%,#F9FBF9 55% 80%,#2C3E35 80%)',
+        nordik: 'linear-gradient(90deg,#EDF1F4 55%,#FFFFFF 55% 80%,#1E4E5F 80%)',
+        kaca: 'linear-gradient(90deg,#0B1020 55%,#22305A 55% 80%,#6FA8FF 80%)'
       };
-      var nm = { auto: 'Otomatis', light: 'Terang', dark: 'Gelap', hitam: 'Hitam', biru: 'Biru', mawar: 'Mawar' };
+      var nm = { auto: 'Otomatis', light: 'Terang', dark: 'Gelap', hitam: 'Hitam', biru: 'Biru', mawar: 'Mawar', eukaliptus: 'Eukaliptus', nordik: 'Nordik', kaca: 'Kaca' };
       var un = { '75': 'Mini', '88': 'Kecil', '100': 'Normal', '118': 'Besar' };
       h = '<div class="card"><p class="sm">Tema warna (berlaku di perangkat ini)</p><div class="themes">' +
             TEMA.map(function (k) {
