@@ -111,6 +111,15 @@ h2 { font: 600 1.05rem/1.3 var(--fd); margin: 0; }
 
 .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.dvc { padding: 0; gap: 0; overflow: hidden; margin-top: 8px; }
+.dvr { display: flex; align-items: stretch; }
+.dvmain { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 14px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.dvmain svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.dvmain b { display: block; font-weight: 600; }
+.dvmain small { display: block; color: var(--muted); font-size: .85rem; }
+.dvdot { width: 52px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.dvdot[aria-expanded="true"] { color: var(--accent); }
+.dvp { border-top: 1px solid var(--line); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .badge.dev { border-color: var(--accent); color: var(--accent); }
 .badge {
   font-size: .78rem; font-weight: 600; color: var(--muted);
@@ -283,7 +292,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   var P = [];                        // pembayaran iuran
   var X = [];                        // pengeluaran (termasuk pengembalian)
   var DEV_UID = 'bjA3cKodmmfTmgh7tjWPdQoLmKb2';   // pemilik aplikasi; izin sebenarnya ada di firestore.rules
-  var isDev = false;
+  var isDev = false, devEdit = false, devKuasa = false;
   var KODE = '', RNAMA = '', pesanRoom = '', ROLES = {}, isHost = false, fdb = null, unsubRoles = null;
   var ALFABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // tanpa I, O (mirip 1, 0)
   var LOG = [];                      // riwayat perubahan
@@ -427,6 +436,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var b = db.batch();
     isi(b);
     b.set(db.collection('log').doc(), { ts: Date.now(), aksi: aksi, ket: (isDev ? '[Dev] ' : '') + ket, kat: kategori(aksi) });
+    if (isDev) audit(KODE, RNAMA, aksi, ket, b);
     return tulis(b.commit());
   }
 
@@ -492,14 +502,20 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (tombol) tombol.textContent = 'Tersalin';
   }
 
-  function namaPeran() { return isDev ? 'Dev' : isHost ? 'Host' : canEdit ? 'Bendahara' : 'Hanya lihat'; }
+  function namaPeran() { return isDev ? (devKuasa ? 'Dev' : 'Dev · lihat') : isHost ? 'Host' : canEdit ? 'Bendahara' : 'Hanya lihat'; }
 
   function terapkanPeran() {
     var u = auth && auth.currentUser;
     var p = u ? ROLES[u.uid] : '';
     isDev = !!u && u.uid === DEV_UID;
-    canEdit = isDev || p === 'host' || p === 'bendahara';
-    isHost = isDev || p === 'host';
+    var asli = p === 'host' || p === 'bendahara';
+    devKuasa = isDev && (asli || devEdit);       // di room orang lain, Dev hanya melihat sampai mengaktifkan edit
+    canEdit = asli || devKuasa;
+    isHost = p === 'host' || devKuasa;
+    if (isDev && KODE) {
+      var ka = 'kk-aud-' + KODE;
+      if (Date.now() - parseInt(lsGet(ka) || '0', 10) > 30 * 60000) { lsSet(ka, String(Date.now())); audit(KODE, RNAMA, 'Masuk room', asli ? 'Dev membuka room (pengurus)' : 'Dev membuka room (mode lihat)'); }
+    }
     $('#role').textContent = namaPeran();
     $('#role').className = 'badge' + (isDev ? ' dev' : '');
     if (!canEdit && tab === 'catat') tab = 'home';
@@ -647,8 +663,15 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
   function alihHost(uid) {
     var u = auth.currentUser;
-    if (isDev || !arm('th' + uid) || ROLES[uid] !== 'bendahara' || !u) return;
+    if (!arm('th' + uid) || ROLES[uid] !== 'bendahara' || !u) return;
     var nr = salinanPeran(), nm = nr.label[uid] || 'Bendahara';
+    if (isDev && ROLES[u.uid] !== 'host') {
+      // Dev menunjuk Host baru: Host lama turun jadi bendahara
+      Object.keys(nr).forEach(function (k) { if (k !== 'label' && nr[k] === 'host') nr[k] = 'bendahara'; });
+      nr[uid] = 'host';
+      tulisPeran(nr, 'Tunjuk Host baru', 'Host baru: ' + nm);
+      return;
+    }
     nr[uid] = 'host';
     nr[u.uid] = 'bendahara';
     tulisPeran(nr, 'Alih jabatan Host', 'Host baru: ' + nm);
@@ -842,7 +865,10 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
                '<span class="mono out">' + rp(x.jumlah) + '</span></div>';
       }).join('');
 
-    $('#sum').innerHTML =
+    var bantu = !isDev ? '' : (!canEdit
+      ? '<div class="alert">Mode bantuan: hanya lihat. <button class="btn sm2" type="button" data-a="dve">Aktifkan edit</button></div>'
+      : (devEdit ? '<div class="alert red">Mode edit Dev aktif. Semua perubahan tercatat [Dev]. <button class="btn ghost sm2" type="button" data-a="dve">Kembali ke lihat saja</button></div>' : ''));
+    $('#sum').innerHTML = bantu +
       '<div class="card">' +
         '<span class="lab">Saldo kas</span>' +
         '<span class="big mono ' + (saldo < 0 ? 'out' : '') + '">' + rp(saldo) + '</span>' +
@@ -996,6 +1022,20 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (a === 'ckd') { salin(KODE, b); return; }
     if (a === 'ctl') { salin(location.origin + location.pathname + '?r=' + KODE, b); return; }
     if (a === 'cuid') { salin(auth.currentUser.uid, b); return; }
+    if (a === 'dve' && isDev) {
+      devEdit = !devEdit;
+      audit(KODE, RNAMA, devEdit ? 'Aktifkan edit' : 'Matikan edit', 'Mode edit Dev');
+      terapkanPeran(); return;
+    }
+    if (a === 'dvm' && isDev) { bukaPanel(id); return; }
+    if (a === 'dvb' && isDev) { unduhRoom(id); return; }
+    if (a === 'dvr' && isDev) { pulihRoom(); return; }
+    if (a === 'dh' && isDev) { dhKode = id; tampilSemuaRoom(); return; }
+    if (a === 'dhx' && isDev) { dhKode = ''; tampilSemuaRoom(); return; }
+    if (a === 'dh2' && isDev) {
+      if (normKode($('#dk').value) !== id) { $('#dhm').className = 'err'; $('#dhm').textContent = 'Kode tidak cocok.'; return; }
+      hapusRoom(id); return;
+    }
     if (a === 'gr') { var rr = daftarRoom().filter(function (x) { return x.kode === id; })[0]; pilihRoom(id, (rr && rr.nama) || b.getAttribute('data-nm')); return; }
     if (a === 'jr') { masukRoom(); return; }
     if (a === 'br') { buatRoom(b); return; }
@@ -1492,7 +1532,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       var it = [['akun', 'Akun', u0 ? esc(u0.email || 'Sudah masuk') : 'Belum masuk'],
                 ['room', 'Room', KODE ? esc((RNAMA || '') + ' · ' + KODE) : 'Masuk atau buat room']];
       if (isDev) it.push(['semua', 'Semua room', 'Khusus Dev: lihat dan masuk ke room mana pun']);
-      if (isHost && !isDev) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
+      if (isHost) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
       if (canEdit) {
         it.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
         it.push(['iuran', 'Iuran', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
@@ -1504,7 +1544,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         return '<button type="button" data-go="' + x[0] + '">' + IC[x[0]] + '<span><b>' + x[1] + '</b><small>' + esc(x[2]) + '</small></span></button>';
       }).join('') + '</div>';
     } else if (sub === 'semua') {
-      h = '<div class="card"><p class="sm">Semua room di Kaskita. Ketuk untuk masuk dengan hak penuh. Semua perubahanmu tercatat [Dev] di riwayat room.</p><div id="dvList"><p class="sm">Memuat…</p></div></div>';
+      h = '<div class="card"><p class="sm">Semua room di Kaskita. Ketuk nama untuk masuk (mode lihat dulu; aktifkan edit di Beranda bila perlu). Semua tindakanmu tercatat.</p><div id="dvList"><p class="sm">Memuat…</p></div></div>' +
+          '<div class="card"><h2>Pulihkan room</h2><p class="sm">Pilih file cadangan (.json) hasil Unduh cadangan.</p><input type="file" id="dvf" accept=".json,application/json"><div id="dvPv"></div></div>' +
+          '<div class="card"><h2>Jejak audit Dev</h2><div id="dvAudit"><p class="sm">Memuat…</p></div></div>';
     } else if (sub === 'akun') {
       var u1 = auth && auth.currentUser;
       h = '<div class="card">' + (u1
@@ -1635,24 +1677,224 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
       '</h2>' + (KODE ? '<button class="lnk" type="button" data-a="sback">&larr; Kembali</button>' : '') + '</div>' + h + '</div>';
     if (sub === 'room') cekDataLama();
-    if (sub === 'semua') muatSemuaRoom();
+    if (sub === 'semua') { dhKode = ''; dvBuka = ''; dvInfo = {}; dvPulih = null; muatSemuaRoom(); muatAudit(); if ($('#dvf')) $('#dvf').onchange = bacaCadangan; }
     if (sub === 'iuran') { maskRupiah($('#cn')); maskRupiah($('#cb')); updIuran(); }
   }
 
   /** Khusus Dev: daftar semua room (aturan Firestore menolak siapa pun selain Dev). */
+  var DVLIST = null, dhKode = '', dvBuka = '', dvInfo = {}, dvPulih = null;
+  var DOTS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+  var KOL = ['members', 'pay', 'exp', 'log', 'cfg', 'akses'];
+
+  function lalu(ts) {
+    if (!ts) return '-';
+    var s = Math.max(0, (Date.now() - ts) / 1000);
+    if (s < 90) return 'baru saja';
+    if (s < 3600) return Math.round(s / 60) + ' menit lalu';
+    if (s < 86400) return Math.round(s / 3600) + ' jam lalu';
+    return Math.round(s / 86400) + ' hari lalu';
+  }
+  function tglPendek(ts) { return ts ? new Date(ts).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'; }
+
+  /** Catatan siapa pun yang dilakukan Dev dicatat di koleksi audit (hanya Dev yang bisa membaca). */
+  function audit(kode, nama, aksi, ket, batch) {
+    if (!fdb) return;
+    var d = fdb.collection('audit').doc(), o = { ts: Date.now(), kode: kode || '', nama: nama || '', aksi: aksi, ket: ket || '' };
+    if (batch) { batch.set(d, o); return; }
+    return tulis(d.set(o));
+  }
+  function muatAudit() {
+    var box = $('#dvAudit');
+    if (!box || !isDev || !fdb) return;
+    fdb.collection('audit').orderBy('ts', 'desc').limit(30).get().then(function (s) {
+      var el = $('#dvAudit'); if (!el) return;
+      el.innerHTML = s.docs.length ? s.docs.map(function (d) {
+        var x = d.data();
+        return '<div class="pv"><span class="sm">' + esc(lalu(x.ts)) + '</span><span><b>' + esc(x.aksi) + '</b> &middot; ' + esc(x.nama || x.kode) + (x.ket ? ': ' + esc(x.ket) : '') + '</span></div>';
+      }).join('') : '<p class="sm">Belum ada catatan.</p>';
+    }).catch(function () { var el = $('#dvAudit'); if (el) el.innerHTML = '<p class="err">Gagal memuat.</p>'; });
+  }
+
+  /** Baca seluruh isi satu room. */
+  function muatInfo(kode) {
+    var root = fdb.collection('groups').doc(kode);
+    return Promise.all([root.get()].concat(KOL.map(function (c) { return root.collection(c).get(); }))).then(function (h) {
+      var o = { meta: h[0].exists ? h[0].data() : {} };
+      KOL.forEach(function (c, i) { o[c] = h[i + 1].docs.map(function (d) { return { id: d.id, d: d.data() }; }); });
+      return o;
+    });
+  }
+  function ringkas(o) {
+    var lain = sum(o.exp.filter(function (x) { return x.d.kind === 'masuk'; }), function (x) { return x.d.jumlah; });
+    var masuk = sum(o.pay, function (x) { return x.d.jumlah; }) + lain;
+    var keluar = sum(o.exp.filter(function (x) { return x.d.kind !== 'masuk'; }), function (x) { return x.d.jumlah; });
+    var cfg = (o.cfg.filter(function (x) { return x.id === 'main'; })[0] || { d: {} }).d;
+    var roles = (o.akses.filter(function (x) { return x.id === 'roles'; })[0] || { d: {} }).d, lb = roles.label || {};
+    var peng = Object.keys(roles).filter(function (k) { return k !== 'label'; }).map(function (k) { return (lb[k] || 'Tanpa nama') + ' (' + (roles[k] === 'host' ? 'Host' : 'Bendahara') + ')'; });
+    var logs = o.log.slice().sort(function (a, b) { return (b.d.ts || 0) - (a.d.ts || 0); });
+    return {
+      dibuat: o.meta.dibuat, minggu: cfg.periode === 'minggu', n: o.members.length,
+      aktif: o.members.filter(function (x) { return x.d.aktif !== false; }).length,
+      peng: peng, tangan: masuk - keluar, nPay: o.pay.length, nLog: o.log.length, terakhir: logs[0]
+    };
+  }
+  function panelRoom(r) {
+    var i = dvInfo[r.kode], isi;
+    if (!i) isi = '<p class="sm">Memuat…</p>';
+    else if (i.err) isi = '<p class="err">Gagal memuat detail.</p>';
+    else {
+      var s = i.s, t = s.terakhir;
+      isi = '<div class="kv"><span>Dibuat</span><b>' + esc(tglPendek(s.dibuat)) + '</b></div>' +
+        '<div class="kv"><span>Iuran</span><b>' + (s.minggu ? 'Mingguan' : 'Bulanan') + '</b></div>' +
+        '<div class="kv"><span>Anggota</span><b>' + s.n + ' (aktif ' + s.aktif + ')</b></div>' +
+        '<div class="kv"><span>Pengurus</span><b style="text-align:right">' + (s.peng.length ? esc(s.peng.join(', ')) : 'Belum ada') + '</b></div>' +
+        '<div class="kv"><span>Uang di tangan</span><b class="mono">' + rp(s.tangan) + '</b></div>' +
+        '<div class="kv"><span>Catatan iuran</span><b>' + s.nPay + '</b></div>' +
+        '<div class="kv"><span>Riwayat</span><b>' + s.nLog + ' catatan</b></div>' +
+        '<div class="kv"><span>Aktivitas terakhir</span><b style="text-align:right">' + (t ? esc(lalu(t.d.ts)) + '<br><small class="sm">' + esc(t.d.aksi) + (/^\[Dev\]/.test(t.d.ket || '') ? ' (oleh Dev)' : '') + '</small>' : '-') + '</b></div>' +
+        '<div class="kv"><span>Dibuka sekarang</span><b>' + (r.kode === KODE ? 'Di perangkat ini' : '-') + '</b></div>';
+    }
+    var hapus = dhKode === r.kode
+      ? '<div class="det"><p class="sm">Menghapus room ini <b>permanen</b>: semua anggota, iuran, pengeluaran, dan riwayatnya hilang. Disarankan unduh cadangan dulu. Ketik kodenya (<b class="mono">' + esc(r.kode) + '</b>) untuk melanjutkan.</p>' +
+        '<input id="dk" autocapitalize="characters" autocomplete="off" placeholder="Ketik kode room">' +
+        '<div class="row"><button class="btn ghost" type="button" data-a="dhx">Batal</button><button class="btn ghost del" type="button" data-a="dh2" data-id="' + esc(r.kode) + '">Hapus permanen</button></div><p id="dhm" class="err"></p></div>'
+      : '';
+    return '<div class="dvp">' + isi +
+      '<div class="row"><button class="btn sm2" type="button" data-a="gr" data-id="' + esc(r.kode) + '" data-nm="' + esc(r.nama) + '">Masuk</button>' +
+      '<button class="btn ghost sm2" type="button" data-a="dvb" data-id="' + esc(r.kode) + '">Unduh cadangan</button>' +
+      '<button class="btn ghost sm2 del" type="button" data-a="dh" data-id="' + esc(r.kode) + '">Hapus room</button></div>' + hapus + '</div>';
+  }
+  function tampilSemuaRoom() {
+    var box = $('#dvList'); if (!box || !DVLIST) return;
+    box.innerHTML = DVLIST.length
+      ? '<p class="sm">' + DVLIST.length + ' room. Ketuk &#8942; untuk detail, cadangan, atau hapus.</p>' + DVLIST.map(function (r) {
+          var buka = dvBuka === r.kode;
+          return '<div class="card dvc"><div class="dvr">' +
+            '<button type="button" class="dvmain" data-a="gr" data-id="' + esc(r.kode) + '" data-nm="' + esc(r.nama) + '">' + IC.room + '<span><b>' + esc(r.nama) + '</b><small>' + esc(r.kode) + (r.kode === KODE ? ' &middot; sedang dibuka' : '') + '</small></span></button>' +
+            '<button type="button" class="dvdot" data-a="dvm" data-id="' + esc(r.kode) + '" aria-label="Detail room" aria-expanded="' + buka + '">' + DOTS + '</button></div>' +
+            (buka ? panelRoom(r) : '') + '</div>';
+        }).join('')
+      : '<p class="sm">Belum ada room.</p>';
+  }
   function muatSemuaRoom() {
     if (!isDev || !fdb) return;
     fdb.collection('groups').get().then(function (s) {
-      var box = $('#dvList'); if (!box) return;
-      var a = s.docs.map(function (d) { return { kode: d.id, nama: (d.data() || {}).nama || d.id }; })
-        .sort(function (x, y) { return x.nama.localeCompare(y.nama, 'id'); });
-      box.innerHTML = a.length
-        ? '<p class="sm">' + a.length + ' room</p><div class="smenu">' + a.map(function (r) {
-            return '<button type="button" data-a="gr" data-id="' + esc(r.kode) + '" data-nm="' + esc(r.nama) + '">' + IC.room + '<span><b>' + esc(r.nama) + '</b><small>' + esc(r.kode) + (r.kode === KODE ? ' · sedang dibuka' : '') + '</small></span></button>';
-          }).join('') + '</div>'
-        : '<p class="sm">Belum ada room.</p>';
+      DVLIST = s.docs.map(function (d) { return { kode: d.id, nama: (d.data() || {}).nama || d.id }; })
+        .sort(function (x, y) { return x.nama.localeCompare(y.nama, 'id') || x.kode.localeCompare(y.kode); });
+      tampilSemuaRoom();
     }).catch(function () {
       var box = $('#dvList'); if (box) box.innerHTML = '<p class="err">Gagal memuat. Pastikan aturan Firestore versi Dev sudah dipublikasikan.</p>';
+    });
+  }
+  function bukaPanel(kode) {
+    dvBuka = dvBuka === kode ? '' : kode;
+    dhKode = '';
+    tampilSemuaRoom();
+    if (dvBuka && !dvInfo[kode]) {
+      muatInfo(kode).then(function (o) { dvInfo[kode] = { s: ringkas(o) }; }, function () { dvInfo[kode] = { err: 1 }; })
+        .then(function () { if (dvBuka === kode) tampilSemuaRoom(); });
+    }
+  }
+  function namaRoomDv(kode) { var r = (DVLIST || []).filter(function (x) { return x.kode === kode; })[0]; return r ? r.nama : kode; }
+
+  /** Cadangan satu room ke file JSON. */
+  function unduhRoom(kode) {
+    note('Menyiapkan cadangan…');
+    muatInfo(kode).then(function (o) {
+      var one = function (c) { return (o[c.n] || []).filter(function (x) { return c.id ? x.id === c.id : true; }); };
+      var isi = {
+        versi: 3, kode: kode, nama: o.meta.nama || kode, pembuat: o.meta.pembuat || '', dibuat: o.meta.dibuat || 0, waktu: new Date().toISOString(),
+        akses: (one({ n: 'akses', id: 'roles' })[0] || {}).d || null,
+        cfg: (one({ n: 'cfg', id: 'main' })[0] || {}).d || null,
+        members: o.members, pay: o.pay, exp: o.exp, log: o.log
+      };
+      unduh('kas-' + kode.toLowerCase() + '-cadangan-' + today() + '.json', JSON.stringify(isi, null, 1), 'application/json');
+      audit(kode, o.meta.nama, 'Unduh cadangan', o.members.length + ' anggota, ' + o.pay.length + ' iuran');
+      note('Cadangan ' + kode + ' diunduh.');
+      muatAudit();
+    }).catch(function () { note('Gagal membuat cadangan.', 'red'); });
+  }
+
+  /** Pulihkan room dari file cadangan. */
+  function bacaCadangan() {
+    var f = $('#dvf') && $('#dvf').files[0], pv = $('#dvPv');
+    dvPulih = null;
+    if (!f || !pv) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var d = JSON.parse(fr.result);
+        if (d.versi !== 3 || !kodeSah(d.kode) || typeof d.nama !== 'string' || !Array.isArray(d.members)) throw new Error('x');
+        dvPulih = d;
+        var ada = (DVLIST || []).some(function (r) { return r.kode === d.kode; });
+        pv.innerHTML = '<div class="det"><p class="sm"><b>' + esc(d.nama) + '</b> (' + esc(d.kode) + ')<br>' + d.members.length + ' anggota, ' + (d.pay || []).length + ' iuran, ' + (d.exp || []).length + ' catatan lain, ' + (d.log || []).length + ' riwayat.</p>' +
+          (ada ? '<p class="err">Room ini masih ada. Data dengan id sama akan ditimpa, riwayat yang sudah ada tidak diubah.</p>' : '<p class="sm">Room ini akan dibuat kembali.</p>') +
+          '<button class="btn" type="button" data-a="dvr">Pulihkan</button><p id="dvPm" class="sm"></p></div>';
+      } catch (e) { pv.innerHTML = '<p class="err">File bukan cadangan room Kaskita yang sah.</p>'; }
+    };
+    fr.readAsText(f);
+  }
+  function pulihRoom() {
+    var d = dvPulih, pm = $('#dvPm');
+    if (!d || !pm) return;
+    var kode = d.kode, root = fdb.collection('groups').doc(kode);
+    pm.className = 'sm'; pm.textContent = 'Memulihkan…';
+    root.collection('log').get().then(function (ls) {
+      var ada = {}; ls.docs.forEach(function (x) { ada[x.id] = 1; });
+      var ops = [[root, { nama: d.nama, pembuat: d.pembuat, dibuat: d.dibuat }]];
+      if (d.akses) ops.push([root.collection('akses').doc('roles'), d.akses]);
+      if (d.cfg) ops.push([root.collection('cfg').doc('main'), d.cfg]);
+      ['members', 'pay', 'exp'].forEach(function (c) { (d[c] || []).forEach(function (x) { ops.push([root.collection(c).doc(x.id), x.d]); }); });
+      (d.log || []).forEach(function (x) { if (!ada[x.id]) ops.push([root.collection('log').doc(x.id), x.d]); });
+      ops.push([fdb.collection('audit').doc(), { ts: Date.now(), kode: kode, nama: d.nama, aksi: 'Pulihkan room', ket: d.members.length + ' anggota' }]);
+      var p = Promise.resolve();
+      for (var i = 0; i < ops.length; i += 400) {
+        (function (potong) {
+          p = p.then(function () { var bt = fdb.batch(); potong.forEach(function (o) { bt.set(o[0], o[1]); }); return bt.commit(); });
+        })(ops.slice(i, i + 400));
+      }
+      return p.then(function () { return ops.length; });
+    }).then(function (n) {
+      simpanRoom(kode, d.nama);
+      if (!(DVLIST || []).some(function (r) { return r.kode === kode; })) { DVLIST = (DVLIST || []).concat([{ kode: kode, nama: d.nama }]); }
+      delete dvInfo[kode]; dvPulih = null;
+      tampilSemuaRoom(); muatAudit();
+      var el = $('#dvPm'); if (el) { el.className = 'ok'; el.textContent = 'Room ' + kode + ' dipulihkan (' + n + ' dokumen).'; }
+    }).catch(function () {
+      var el = $('#dvPm'); if (el) { el.className = 'err'; el.textContent = 'Gagal memulihkan. Pastikan aturan Firestore versi terbaru sudah dipublikasikan.'; }
+    });
+  }
+
+  /** Hapus satu room beserta seluruh isinya (subkoleksi dulu, baru dokumen room). */
+  function hapusRoom(kode) {
+    var msg = $('#dhm'), root = fdb.collection('groups').doc(kode), nama = namaRoomDv(kode);
+    msg.className = 'sm'; msg.textContent = 'Menghapus…';
+    var n = 0;
+    var p = audit(kode, nama, 'Hapus room', 'Room dihapus permanen') || Promise.resolve();
+    KOL.forEach(function (c) {
+      p = p.then(function () { return root.collection(c).get(); }).then(function (s) {
+        var ids = s.docs.map(function (d) { return d.id; }), q = Promise.resolve();
+        for (var i = 0; i < ids.length; i += 400) {
+          (function (potong) {
+            q = q.then(function () {
+              var bt = fdb.batch();
+              potong.forEach(function (id) { bt.delete(root.collection(c).doc(id)); });
+              return bt.commit().then(function () { n += potong.length; });
+            });
+          })(ids.slice(i, i + 400));
+        }
+        return q;
+      });
+    });
+    p.then(function () { return root.delete(); }).then(function () {
+      lupakanRoom(kode);
+      dhKode = ''; dvBuka = ''; delete dvInfo[kode];
+      if (lsGet('kk-room-aktif') === kode) { lsSet('kk-room-aktif', ''); muatUlang(); return; }
+      DVLIST = (DVLIST || []).filter(function (r) { return r.kode !== kode; });
+      tampilSemuaRoom(); muatAudit();
+      note('Room ' + kode + ' dihapus (' + n + ' dokumen).');
+    }).catch(function () {
+      var el = $('#dhm'); if (el) { el.className = 'err'; el.textContent = 'Gagal menghapus sebagian. Cek aturan Firestore versi terbaru, lalu coba lagi.'; }
     });
   }
 
