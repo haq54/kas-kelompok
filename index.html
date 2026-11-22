@@ -299,11 +299,20 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   };
 
-  var cur = function () { return today().slice(0, 7); };
+  var MINGGU = function () { return CFG.periode === 'minggu'; };
+  var SATUAN = function () { return MINGGU() ? 'minggu' : 'bulan'; };
+  var tglUTC = function (s) { var p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); };
+  var strUTC = function (d) { return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()); };
+  var tambahHari = function (s, n) { var d = tglUTC(s); d.setUTCDate(d.getUTCDate() + n); return strUTC(d); };
+  var senin = function (s) { var d = tglUTC(s); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return strUTC(d); };
+  /** Tanggal/bulan apa pun -> kunci periode ruang ini (bulan: YYYY-MM, minggu: tanggal Senin). */
+  var kunci = function (s) { s = String(s || ''); return MINGGU() ? (s.length >= 10 ? senin(s.slice(0, 10)) : s) : s.slice(0, 7); };
+  var cur = function () { return kunci(today()); };
 
   var BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   var bln = function (s) {
     var a = String(s).split('-');
+    if (a.length > 2) return 'Mgg ' + parseInt(a[2], 10) + ' ' + BULAN[a[1] - 1] + ' ' + a[0];
     return BULAN[a[1] - 1] + ' ' + a[0];
   };
 
@@ -321,6 +330,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
   /** Daftar bulan 'YYYY-MM' dari a sampai b (inklusif). */
   function rentangBulan(a, b) {
+    if (a.length > 7) { var w = [], d = a; while (d <= b) { w.push(d); d = tambahHari(d, 7); } return w; }
     var r = [], p = a.split('-').map(Number), e = b.split('-').map(Number);
     var y = p[0], m = p[1];
     while (y < e[0] || (y === e[0] && m <= e[1])) {
@@ -486,7 +496,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (nama.length < 3) { msg.className = 'err'; msg.textContent = 'Nama room minimal 3 huruf.'; return; }
     msg.className = 'sm'; msg.textContent = 'Membuat room…';
     tombol.disabled = true;
-    var kodeBaru;
+    var kodeBaru, periode = ($('#rp') && $('#rp').value === 'minggu') ? 'minggu' : 'bulan';
     kodeBebas(5).then(function (kode) {
       kodeBaru = kode;
       var root = fdb.collection('groups').doc(kode), b = fdb.batch();
@@ -498,7 +508,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       return b.commit();
     }).then(function () {
       var r = ruang(kodeBaru), b2 = fdb.batch();
-      b2.set(r.doc('cfg/main'), { base: 10000, naik: [] });
+      b2.set(r.doc('cfg/main'), { base: periode === 'minggu' ? 5000 : 10000, naik: [], periode: periode });
       b2.set(r.collection('log').doc(), { ts: Date.now(), aksi: 'Room dibuat', ket: nama });
       return b2.commit();
     }).then(function () { pilihRoom(kodeBaru, nama); })
@@ -788,7 +798,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var belum = aktif.filter(function (m) { return m.kurang > 0; });
     var tunggakan = sum(aktif, function (m) { return m.kurang; });
 
-    // iuran bulan berjalan: siapa yang tagihan bulan ini sudah terpenuhi
+    // iuran periode berjalan: siapa yang tagihan bulan ini sudah terpenuhi
     var sk = cur();
     var ditagih = aktif.filter(function (m) { return m.rows.length && m.rows[m.rows.length - 1].b === sk; });
     var tTarget = sum(ditagih, function (m) { return m.rows[m.rows.length - 1].n; });
@@ -819,9 +829,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         : '<div class="alert green">Semua anggota aktif sudah lunas sampai ' + bln(cur()) + '.</div>') +
       '<div class="card"><h2>Iuran ' + bln(sk) + '</h2>' +
         (ditagih.length
-          ? '<p class="sm"><b>' + tLunas + ' dari ' + ditagih.length + ' anggota</b> sudah lunas bulan ini &middot; ' + rp(tTerisi) + ' dari ' + rp(tTarget) + '</p>' +
+          ? '<p class="sm"><b>' + tLunas + ' dari ' + ditagih.length + ' anggota</b> sudah lunas ' + SATUAN() + ' ini &middot; ' + rp(tTerisi) + ' dari ' + rp(tTarget) + '</p>' +
             '<div class="track"><i style="width:' + Math.min(100, tTarget ? Math.round(tTerisi / tTarget * 100) : 0) + '%"></i></div>'
-          : '<p class="sm">Belum ada anggota yang ditagih bulan ini.</p>') +
+          : '<p class="sm">Belum ada anggota yang ditagih ' + SATUAN() + ' ini.</p>') +
       '</div>' +
       (canEdit && belum.length
         ? '<div class="card"><h2>Pengingat tunggakan</h2>' +
@@ -881,7 +891,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function detail(m) {
     var bayar = P.filter(function (p) { return p.mid === m.id; }).sort(terbaru);
 
-    var tabel = '<table><tr><th>Bulan</th><th>Tagihan</th><th>Terbayar</th></tr>' +
+    var tabel = '<table><tr><th>' + (MINGGU() ? 'Minggu' : 'Bulan') + '</th><th>Tagihan</th><th>Terbayar</th></tr>' +
       m.rows.slice().reverse().map(function (r) {
         return '<tr><td>' + bln(r.b) + '</td><td class="mono">' + rp(r.n) + '</td>' +
                '<td class="mono ' + (r.c >= r.n ? 'in' : 'out') + '">' + rp(r.c) + '</td></tr>';
@@ -1047,9 +1057,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function tambahAnggota() {
     var nama = $('#an').value.trim().replace(/\s+/g, ' ');
     var nim = $('#ai').value.trim();
-    var mulai = $('#am').value;
+    var mulai = kunci($('#am').value);
     var msg = $('#amsg');
-    if (!nama || !mulai) { msg.className = 'err'; msg.textContent = 'Isi nama dan bulan mulai.'; return; }
+    if (!nama || !mulai) { msg.className = 'err'; msg.textContent = 'Isi nama dan ' + (MINGGU() ? 'tanggal' : 'bulan') + ' mulai.'; return; }
     if (nimDipakai(nim)) { msg.className = 'err'; msg.textContent = 'NIM itu sudah dipakai.'; return; }
     msg.className = 'sm';
     msg.textContent = 'Menyimpan…';
@@ -1062,12 +1072,12 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
 
   function ubahIuran() {
-    var v = num($('#cn').value), m = $('#cm').value;
+    var v = num($('#cn').value), m = kunci($('#cm').value);
     if (!v || !m) return;
     var naik = (CFG.naik || []).filter(function (x) { return x.dari !== m; });
     naik.push({ dari: m, nominal: v });
     $('#cn').value = '';
-    simpan(function (b) { b.set(db.doc('cfg/main'), { base: CFG.base || 10000, naik: naik }); },
+    simpan(function (b) { b.set(db.doc('cfg/main'), Object.assign({}, CFG, { naik: naik })); },
       'Ubah iuran', rp(v) + ' mulai ' + bln(m));
   }
 
@@ -1075,14 +1085,14 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var v = num($('#cb').value);
     if (!v) return;
     $('#cb').value = '';
-    simpan(function (b) { b.set(db.doc('cfg/main'), { base: v, naik: CFG.naik || [] }); },
+    simpan(function (b) { b.set(db.doc('cfg/main'), Object.assign({}, CFG, { base: v })); },
       'Ubah iuran awal', rp(CFG.base || 10000) + ' menjadi ' + rp(v));
   }
 
   function hapusNaik(dari) {
     if (!arm('dn' + dari)) return;
     var naik = (CFG.naik || []).filter(function (x) { return x.dari !== dari; });
-    simpan(function (b) { b.set(db.doc('cfg/main'), { base: CFG.base || 10000, naik: naik }); },
+    simpan(function (b) { b.set(db.doc('cfg/main'), Object.assign({}, CFG, { naik: naik })); },
       'Hapus kenaikan iuran', 'mulai ' + bln(dari));
   }
 
@@ -1143,7 +1153,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
 
   function jalankanImpor() {
-    var batch = Date.now(), mulai = $('#im').value;
+    var batch = Date.now(), mulai = kunci($('#im').value);
     var ok = PV.filter(function (r) { return r.s !== 'bad' && r.nama; });
     var im = $('#imsg');
     if (!mulai || !ok.length) return;
@@ -1293,7 +1303,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
     var lebih = Math.max(0, m.paid + j - m.tagih);
     var pesan = 'Tersimpan: ' + m.nama + ' ' + rp(j) + '.' +
-      (lebih > 0 ? ' Ada lebihan ' + rp(lebih) + ': otomatis menutup bulan berikutnya.' : '');
+      (lebih > 0 ? ' Ada lebihan ' + rp(lebih) + ': otomatis menutup ' + SATUAN() + ' berikutnya.' : '');
     msg.className = 'sm';
     msg.textContent = 'Menyimpan…';
     $('#pj').value = '';
@@ -1359,8 +1369,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
    * Tab: Laporan
    * ========================================================= */
   function fLaporan() {
-    var semua = P.map(function (p) { return { t: p.tgl.slice(0, 7), i: p.jumlah, o: 0 }; })
-      .concat(X.map(function (x) { return x.kind === 'masuk' ? { t: (x.tgl || '').slice(0, 7), i: x.jumlah, o: 0 } : { t: (x.tgl || '').slice(0, 7), i: 0, o: x.jumlah }; }));
+    var semua = P.map(function (p) { return { t: kunci(p.tgl), i: p.jumlah, o: 0 }; })
+      .concat(X.map(function (x) { return x.kind === 'masuk' ? { t: kunci(x.tgl), i: x.jumlah, o: 0 } : { t: kunci(x.tgl), i: 0, o: x.jumlah }; }));
 
     var lainTotal = sum(X.filter(function (x) { return x.kind === 'masuk'; }), jml);
     var perBulan = {};
@@ -1384,8 +1394,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     }).join('');
 
     $('#rep').innerHTML =
-      '<div class="card"><h2>Rekap bulanan</h2><div style="overflow-x:auto"><table>' +
-        '<tr><th>Bulan</th><th>Masuk</th><th>Keluar</th><th>Uang di tangan</th></tr>' +
+      '<div class="card"><h2>Rekap ' + (MINGGU() ? 'mingguan' : 'bulanan') + '</h2><div style="overflow-x:auto"><table>' +
+        '<tr><th>' + (MINGGU() ? 'Minggu' : 'Bulan') + '</th><th>Masuk</th><th>Keluar</th><th>Uang di tangan</th></tr>' +
         (baris || '<tr><td colspan="4" class="sm">Belum ada data.</td></tr>') +
       '</table></div>' +
       (lainTotal > 0 ? '<p class="sm">Kolom Masuk sudah termasuk pemasukan lain (hadiah, donasi) sebesar ' + rp(lainTotal) + '.</p>' : '') +
@@ -1453,7 +1463,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       if (isHost) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
       if (canEdit) {
         it.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
-        it.push(['iuran', 'Iuran', 'Sekarang ' + rp(nominal(cur())) + ' per bulan']);
+        it.push(['iuran', 'Iuran', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
         it.push(['data', 'Data', 'Cadangan dan rekap iuran']);
       }
       it.push(['tampilan', 'Tampilan', 'Tema warna dan ukuran teks']);
@@ -1501,6 +1511,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         '<div class="card"><h2>Buat room baru</h2>' +
           (u2
             ? '<input id="rn" placeholder="Nama kelompok (mis. Kas Fisika A)" maxlength="40">' +
+              '<select id="rp"><option value="bulan">Iuran bulanan</option><option value="minggu">Iuran mingguan (mulai Senin)</option></select>' +
               '<button class="btn" type="button" data-a="br">Buat room</button>' +
               '<p class="sm">Kamu otomatis menjadi Host. Kode room dibuat otomatis.</p>'
             : '<p class="sm">Untuk membuat room kamu perlu akun.</p><button class="btn" type="button" data-a="in">Masuk atau daftar</button>') +
@@ -1528,13 +1539,14 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     } else if (sub === 'anggota') {
       h = '<div class="card"><h2>Tambah anggota</h2>' +
             '<div class="row"><input id="an" placeholder="Nama"><input id="ai" inputmode="numeric" placeholder="NIM">' +
-            '<input id="am" type="month" value="' + cur() + '"></div>' +
+            '<input id="am" type="' + (MINGGU() ? 'date' : 'month') + '" value="' + (MINGGU() ? today() : cur()) + '"></div>' +
+            (MINGGU() ? '<p class="sm">Pilih tanggal mana saja; ditagih mulai Senin minggu itu.</p>' : '') +
             '<button class="btn" type="button" data-a="aok">Tambah</button><p id="amsg" class="err"></p>' +
           '</div>' +
           '<div class="card"><h2>Impor massal</h2>' +
             '<p class="sm">Tempel satu anggota per baris (nama dan NIM, dipisah tab, koma, atau spasi). Nomor urut di depan diabaikan.</p>' +
             '<textarea id="ib" placeholder="Ahmad Haqi 2021001&#10;Budi Santoso, 2021002"></textarea>' +
-            '<div class="row"><label class="sm">Mulai ditagih bulan<input id="im" type="month" value="' + cur() + '"></label></div>' +
+            '<div class="row"><label class="sm">Mulai ditagih ' + (MINGGU() ? '(tanggal, dihitung dari Senin)' : 'bulan') + '<input id="im" type="' + (MINGGU() ? 'date' : 'month') + '" value="' + (MINGGU() ? today() : cur()) + '"></label></div>' +
             '<div id="ipv"></div>' +
             '<div class="row"><button class="btn ghost" type="button" data-a="ipr">Pratinjau</button>' +
             '<button class="btn" type="button" data-a="iok" id="iok" hidden>Impor</button>' +
@@ -1542,11 +1554,11 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             '<p id="imsg" class="sm"></p>' +
           '</div>';
     } else if (sub === 'iuran') {
-      h = '<div class="card"><h2>Iuran per bulan</h2><div id="nkList"></div></div>' +
+      h = '<div class="card"><h2>Iuran per ' + SATUAN() + '</h2><div id="nkList"></div></div>' +
           '<div class="card"><h2>Ubah iuran</h2>' +
-            '<p class="sm">Perubahan hanya berlaku mulai bulan yang dipilih, bulan-bulan sebelumnya tetap.</p>' +
+            '<p class="sm">Perubahan hanya berlaku mulai ' + SATUAN() + ' yang dipilih, yang sebelumnya tetap.</p>' +
             '<div class="row"><input id="cn" inputmode="numeric" placeholder="Nominal baru">' +
-            '<input id="cm" type="month" value="' + cur() + '"><button class="btn" type="button" data-a="cok">Terapkan</button></div>' +
+            '<input id="cm" type="' + (MINGGU() ? 'date' : 'month') + '" value="' + (MINGGU() ? today() : cur()) + '"><button class="btn" type="button" data-a="cok">Terapkan</button></div>' +
           '</div>' +
           '<div class="card"><h2>Iuran awal</h2>' +
             '<p class="sm">Nominal sebelum kenaikan pertama berlaku.</p>' +
@@ -1599,7 +1611,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         return '<div class="kv"><span>Mulai ' + bln(x.dari) + '</span><span class="acts"><b class="mono">' + rp(x.nominal) + '</b>' +
           '<button class="btn ghost sm2 del" type="button" data-a="dn" data-id="' + esc(x.dari) + '">' + (armed === 'dn' + x.dari ? 'Yakin?' : 'Hapus') + '</button></span></div>';
       }).join('') +
-      '<p class="sm">Bulan ini: ' + rp(nominal(cur())) + ' per bulan.</p>';
+      '<p class="sm">' + (MINGGU() ? 'Minggu' : 'Bulan') + ' ini: ' + rp(nominal(cur())) + ' per ' + SATUAN() + '.</p>';
   }
 
   /* =========================================================
