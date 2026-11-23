@@ -517,10 +517,38 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     };
   }
 
+  // Kode room baru: 8 karakter, minimal 2 huruf dan 2 angka, tanpa pola yang mudah ditebak
+  // (aturan yang sama dikunci di Firestore Rules, kecuali pola berulang yang hanya dicek di sini)
+  function kodeLemah(k) {
+    var n = k.length, i, j;
+    if ((k.match(/[0-9]/g) || []).length < 2 || (k.match(/[A-Z]/g) || []).length < 2) return true;
+    if (/(.)\1{3}/.test(k)) return true;                       // 4 karakter sama berurutan
+    function urut(t) {                                          // naik atau turun, mis. ABCD / 4321
+      var a = true, d = true;
+      for (i = 1; i < t.length; i++) {
+        var c = t.charCodeAt(i) - t.charCodeAt(i - 1);
+        if (c !== 1) a = false;
+        if (c !== -1) d = false;
+      }
+      return a || d;
+    }
+    if (urut(k.slice(0, 4)) || urut(k.slice(n - 4))) return true;   // urutan di depan atau belakang
+    for (j = 1; j <= 4; j++) {                                  // pola ulang: ABABABAB, ABCDABCD
+      if (n % j) continue;
+      var u = k.slice(0, j), ok = true;
+      for (i = j; i < n; i += j) if (k.substr(i, j) !== u) { ok = false; break; }
+      if (ok) return true;
+    }
+    return false;
+  }
   function buatKode() {
-    var a = new Uint8Array(6);
-    crypto.getRandomValues(a);
-    return Array.prototype.map.call(a, function (v) { return ALFABET.charAt(v % 32); }).join('');
+    var k, t = 0;
+    do {
+      var a = new Uint8Array(8);
+      crypto.getRandomValues(a);
+      k = Array.prototype.map.call(a, function (v) { return ALFABET.charAt(v % 32); }).join('');
+    } while (kodeLemah(k) && ++t < 200);
+    return k;
   }
   function kodeBebas(sisa) {
     var k = buatKode();
