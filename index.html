@@ -164,6 +164,39 @@ input, select, textarea {
 }
 textarea { min-height: 110px; resize: vertical; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
+/* pemilih bertema */
+.selw { position: relative; }
+.selw select { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.selbtn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 42px; padding: 8px 12px;
+  background: var(--field); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-align: left; cursor: pointer;
+}
+.selbtn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selbtn svg { flex: none; color: var(--muted); }
+.selbtn.kosong span { color: var(--muted); }
+#sht { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .45); }
+#sht[hidden] { display: none; }
+.shp {
+  width: 100%; max-width: 560px; max-height: 78vh; display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .25); animation: naik .18s ease-out;
+}
+@keyframes naik { from { transform: translateY(24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .shp { animation: none; } }
+.shh { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
+.shq { width: auto; margin: 0 16px 8px; }
+.shq[hidden] { display: none; }
+.shl { overflow-y: auto; padding: 0 8px 16px; }
+.sho {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 10px 12px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; cursor: pointer;
+}
+.sho:hover, .sho:active { background: var(--field); }
+.sho[aria-selected="true"] { background: var(--field); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+.sho small { display: block; color: var(--muted); font-weight: 400; font-size: .82rem; }
+.sho .st { flex: none; font-size: .78rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--out-soft); color: var(--out); white-space: nowrap; }
+.sho .st.ok { background: var(--in-soft); color: var(--in); }
+
 .row > * { flex: 1 1 9rem; }
 
 .btn {
@@ -756,8 +789,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
           '<div class="card">' +
             '<div class="row">' +
               '<input id="q" placeholder="Cari nama atau NIM" value="' + esc(q) + '">' +
-              '<select id="so"><option value="nama">Urut nama</option><option value="nim">Urut NIM</option><option value="kurang">Tunggakan terbesar</option></select>' +
-              '<select id="sf"><option value="">Semua status</option><option value="belum">Belum lunas</option><option value="lunas">Sudah lunas</option><option value="off">Nonaktif</option></select>' +
+              '<select id="so" aria-label="Urutkan"><option value="nama">Urut nama</option><option value="nim">Urut NIM</option><option value="kurang">Tunggakan terbesar</option></select>' +
+              '<select id="sf" aria-label="Filter status"><option value="">Semua status</option><option value="belum">Belum lunas</option><option value="lunas">Sudah lunas</option><option value="off">Nonaktif</option></select>' +
             '</div>' +
             '<p class="sm" id="cnt"></p>' +
             '<div id="list"></div>' +
@@ -775,7 +808,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         '<div class="wrap">' +
           '<form id="fp" class="card">' +
             '<h2>Catat iuran masuk</h2>' +
-            '<select id="pm" required></select>' +
+            '<select id="pm" required aria-label="Pilih anggota"></select>' +
             '<div class="row"><input id="pt" type="date" required><input id="pj" inputmode="numeric" placeholder="Jumlah (Rp)" required></div>' +
             '<button class="btn">Simpan iuran</button><p id="pmsg" class="sm"></p>' +
           '</form>' +
@@ -1277,7 +1310,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var aktif = D.filter(isAktif).sort(byNama);
 
     s.innerHTML = '<option value="">Pilih anggota</option>' + aktif.map(function (m) {
-      return '<option value="' + m.id + '">' + esc(m.nama) + ' (' + esc(m.nim) + ')' +
+      return '<option value="' + m.id + '" data-lbl="' + esc(m.nama) + '" data-sub="NIM ' + esc(m.nim) + '"' + (m.kurang > 0 ? ' data-tag="kurang ' + rp(m.kurang) + '"' : ' data-tag="lunas"') + '>' + esc(m.nama) + ' (' + esc(m.nim) + ')' +
              (m.kurang > 0 ? ' - kurang ' + rp(m.kurang) : '') + '</option>';
     }).join('');
     s.value = pilihan;
@@ -1587,7 +1620,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         '<div class="card"><h2>Buat room baru</h2>' +
           (u2
             ? '<input id="rn" placeholder="Nama kelompok (mis. Kas Fisika A)" maxlength="40">' +
-              '<select id="rp"><option value="bulan">Iuran bulanan</option><option value="minggu">Iuran mingguan (mulai Senin)</option></select>' +
+              '<select id="rp" aria-label="Jenis iuran"><option value="bulan">Iuran bulanan</option><option value="minggu">Iuran mingguan (mulai Senin)</option></select>' +
               '<button class="btn" type="button" data-a="br">Buat room</button>' +
               '<p class="sm">Kamu otomatis menjadi Host. Kode room dibuat otomatis.</p>'
             : '<p class="sm">Untuk membuat room kamu perlu akun.</p><button class="btn" type="button" data-a="in">Masuk atau daftar</button>') +
@@ -2082,6 +2115,83 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       navigator.serviceWorker.register('sw.js').catch(function () {});
     });
   }
+})();
+/* ===== Pemilih (pengganti daftar pilihan bawaan HP): lembar bawah bertema ===== */
+(function () {
+  var sheet = null, aktifSel = null, tombolAsal = null;
+  function teks(o) { return o ? (o.getAttribute('data-lbl') || o.text) : ''; }
+  function sinkron(sel) {
+    var b = sel._btn; if (!b) return;
+    var o = sel.options[sel.selectedIndex], t = teks(o);
+    b.firstChild.textContent = t || '';
+    b.classList.toggle('kosong', !sel.value);
+  }
+  function pasang(sel) {
+    if (sel.getAttribute('data-e')) return;
+    sel.setAttribute('data-e', '1'); sel.tabIndex = -1;
+    var w = document.createElement('div'); w.className = 'selw';
+    sel.parentNode.insertBefore(w, sel); w.appendChild(sel);
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'selbtn';
+    b.innerHTML = '<span></span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    b.addEventListener('click', function () { buka(sel, b); });
+    w.appendChild(b); sel._btn = b; sinkron(sel);
+    new MutationObserver(function () { sinkron(sel); }).observe(sel, { childList: true });
+  }
+  function semua() { Array.prototype.forEach.call(document.querySelectorAll('select:not([data-e])'), pasang); }
+
+  function bangun() {
+    sheet = document.createElement('div'); sheet.id = 'sht'; sheet.hidden = true;
+    sheet.innerHTML = '<div class="shp" role="dialog" aria-modal="true"><div class="shh"><b></b><button type="button" class="lnk" data-x>Tutup</button></div><input class="shq" type="search" placeholder="Cari…" autocomplete="off"><div class="shl" role="listbox"></div></div>';
+    sheet.addEventListener('click', function (e) { if (e.target === sheet || e.target.hasAttribute('data-x')) tutup(); });
+    sheet.querySelector('.shq').addEventListener('input', function () { isi(this.value); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) tutup(); });
+    document.body.appendChild(sheet);
+  }
+  function isi(q) {
+    var l = sheet.querySelector('.shl'); l.innerHTML = '';
+    q = (q || '').toLowerCase();
+    var n = 0;
+    Array.prototype.forEach.call(aktifSel.options, function (o) {
+      if (o.value === '' && aktifSel.required) return;   // placeholder tidak ditampilkan sebagai pilihan
+      var t = o.text + ' ' + (o.getAttribute('data-sub') || '');
+      if (q && t.toLowerCase().indexOf(q) < 0) return;
+      n++;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'sho';
+      b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(o.value === aktifSel.value));
+      var kiri = document.createElement('span'), nm = document.createElement('span');
+      nm.textContent = o.getAttribute('data-lbl') || o.text; kiri.appendChild(nm);
+      var sub = o.getAttribute('data-sub');
+      if (sub) { var s = document.createElement('small'); s.textContent = sub; kiri.appendChild(s); }
+      b.appendChild(kiri);
+      var tag = o.getAttribute('data-tag');
+      if (tag) { var g = document.createElement('span'); g.className = 'st' + (/^lunas/i.test(tag) ? ' ok' : ''); g.textContent = tag; b.appendChild(g); }
+      b.addEventListener('click', function () {
+        aktifSel.value = o.value;
+        aktifSel.dispatchEvent(new Event('input', { bubbles: true }));
+        aktifSel.dispatchEvent(new Event('change', { bubbles: true }));
+        sinkron(aktifSel); tutup();
+      });
+      l.appendChild(b);
+    });
+    if (!n) { var k = document.createElement('p'); k.className = 'sm'; k.style.padding = '12px'; k.textContent = 'Tidak ada yang cocok.'; l.appendChild(k); }
+  }
+  function buka(sel, btn) {
+    if (!sheet) bangun();
+    aktifSel = sel; tombolAsal = btn;
+    var judul = sel.getAttribute('aria-label') || sel.getAttribute('data-judul') || (sel.options[0] && sel.options[0].value === '' ? sel.options[0].text : 'Pilih');
+    sheet.querySelector('b').textContent = judul;
+    var q = sheet.querySelector('.shq'); q.value = ''; q.hidden = sel.options.length < 9;
+    isi('');
+    sheet.hidden = false; document.documentElement.style.overflow = 'hidden';
+    var cur = sheet.querySelector('[aria-selected="true"]'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center' });
+  }
+  function tutup() {
+    sheet.hidden = true; document.documentElement.style.overflow = '';
+    if (tombolAsal) tombolAsal.focus();
+  }
+  new MutationObserver(semua).observe(document.body, { childList: true, subtree: true });
+  setInterval(function () { Array.prototype.forEach.call(document.querySelectorAll('select[data-e]'), sinkron); }, 500);
+  semua();
 })();
 </script>
 </body>
