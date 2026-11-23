@@ -1684,7 +1684,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   /** Khusus Dev: daftar semua room (aturan Firestore menolak siapa pun selain Dev). */
   var DVLIST = null, dhKode = '', dvBuka = '', dvInfo = {}, dvPulih = null;
   var DOTS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
-  var KOL = ['members', 'pay', 'exp', 'log', 'cfg', 'akses'];
+  var KOL = ['members', 'pay', 'exp', 'log', 'cfg'];   // 'akses/roles' dibaca/dihapus sebagai dokumen (aturan tidak mengizinkan list)
 
   function lalu(ts) {
     if (!ts) return '-';
@@ -1718,9 +1718,10 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   /** Baca seluruh isi satu room. */
   function muatInfo(kode) {
     var root = fdb.collection('groups').doc(kode);
-    return Promise.all([root.get()].concat(KOL.map(function (c) { return root.collection(c).get(); }))).then(function (h) {
+    return Promise.all([root.get(), root.collection('akses').doc('roles').get()].concat(KOL.map(function (c) { return root.collection(c).get(); }))).then(function (h) {
       var o = { meta: h[0].exists ? h[0].data() : {} };
-      KOL.forEach(function (c, i) { o[c] = h[i + 1].docs.map(function (d) { return { id: d.id, d: d.data() }; }); });
+      o.akses = h[1].exists ? [{ id: 'roles', d: h[1].data() }] : [];
+      KOL.forEach(function (c, i) { o[c] = h[i + 2].docs.map(function (d) { return { id: d.id, d: d.data() }; }); });
       return o;
     });
   }
@@ -1886,7 +1887,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         return q;
       });
     });
-    p.then(function () { return root.delete(); }).then(function () {
+    p.then(function () { return root.collection('akses').doc('roles').delete(); }).then(function () { return root.delete(); }).then(function () {
       lupakanRoom(kode);
       dhKode = ''; dvBuka = ''; delete dvInfo[kode];
       if (lsGet('kk-room-aktif') === kode) { lsSet('kk-room-aktif', ''); muatUlang(); return; }
