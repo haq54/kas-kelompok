@@ -21,6 +21,7 @@
   --ink: #16231F; --muted: #5E6B66; --line: #DCE2DD;
   --accent: #1F4E79; --accent-ink: #fff;
   --in: #18794E;  --in-soft: #E1F1E8;
+  --muka: #0B76B0;
   --out: #B23A2B; --out-soft: #F8E6E2;
   --warn: #8A6100; --warn-soft: #FBF0D0;
   --fd: "Familjen Grotesk", system-ui, sans-serif;
@@ -227,6 +228,9 @@ textarea { min-height: 110px; resize: vertical; }
 .chip { font-size: .78rem; font-weight: 600; border-radius: 99px; padding: 2px 10px; white-space: nowrap; }
 .lunas  { background: var(--in-soft);   color: var(--in); }
 .kurang { background: var(--warn-soft); color: var(--warn); }
+:root[data-theme="dark"], :root[data-theme="hitam"], :root[data-theme="biru"], :root[data-theme="kaca"] { --muka: #38bdf8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --muka: #38bdf8; } }
+.dm { display: block; font-size: 11px; color: var(--muka); font-weight: 500; white-space: nowrap; }
 .belum  { background: var(--out-soft);  color: var(--out); }
 .off    { background: var(--field);     color: var(--muted); }
 .det { background: var(--field); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
@@ -343,8 +347,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   var CFG = { base: 10000, naik: [] };
   var BAYAR = null, bayarLangkah = 0;   // cara bayar (cfg/bayar) dan langkah pengingat sebelum nomor tampil
   var D = [];                        // anggota + hasil hitungan (derive)
-  var FITUR = null, IUR = [], IP = [];   // sakelar fitur (cfg/fitur), daftar iuran bersama, dan pembayarannya
-  var IBMUAT = { iur: false, ipay: false };
+  var FITUR = null, IUR = [], IP = [], IX = [];   // sakelar fitur (cfg/fitur), daftar iuran bersama, dan pembayarannya
+  var IBMUAT = { iur: false, ipay: false, iexp: false };
   var iSel = '', edBuka = '', qPre = '';   // iuran yang dibuka, anggota yang form ubahnya terbuka, iuran terpilih di tab Catat
   var tab = 'home', sel = null, q = '';
   // urutan anggota diingat di perangkat ini: Anggota, Catat iuran, dan pengingat memakai urutan yang sama
@@ -397,8 +401,30 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   var BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   var bln = function (s) {
     var a = String(s).split('-');
-    if (a.length > 2) return 'Mgg ' + parseInt(a[2], 10) + ' ' + BULAN[a[1] - 1] + ' ' + a[0];
+    if (a.length > 2) {   // minggu: rentang Senin-Minggu
+      var e = tambahHari(s, 6).split('-'), d1 = parseInt(a[2], 10), d2 = parseInt(e[2], 10);
+      if (a[0] !== e[0]) return d1 + ' ' + BULAN[a[1] - 1] + ' ' + a[0] + '\u2013' + d2 + ' ' + BULAN[e[1] - 1] + ' ' + e[0];
+      if (a[1] !== e[1]) return d1 + ' ' + BULAN[a[1] - 1] + '\u2013' + d2 + ' ' + BULAN[e[1] - 1] + ' ' + a[0];
+      return d1 + '\u2013' + d2 + ' ' + BULAN[a[1] - 1] + ' ' + a[0];
+    }
     return BULAN[a[1] - 1] + ' ' + a[0];
+  };
+  /** Akhir periode untuk label "Lunas (s.d. ...)": minggu -> "6 Des", bulan -> "Des 2026". */
+  var akhirLabel = function (b) {
+    if (String(b).length <= 7) return bln(b);
+    var e = tambahHari(b, 6).split('-');
+    return parseInt(e[2], 10) + ' ' + BULAN[e[1] - 1] + (e[0] !== today().slice(0, 4) ? ' ' + e[0] : '');
+  };
+  var tglPendek = function (s) {
+    var a = String(s || '').split('-');
+    return a.length < 3 ? '-' : parseInt(a[2], 10) + ' ' + BULAN[a[1] - 1] + ' ' + a[0];
+  };
+  /** Kunci periode sesudah b (minggu: +7 hari, bulan: bulan berikutnya tanpa lompatan akhir bulan). */
+  var nextKey = function (b) {
+    if (MINGGU()) return tambahHari(b, 7);
+    var p = b.split('-').map(Number), y = p[0], m = p[1] + 1;
+    if (m > 12) { m = 1; y++; }
+    return y + '-' + pad2(m);
   };
 
   var sum = function (arr, fn) {
@@ -702,15 +728,15 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
   function namaBerkas(ext) { return 'kas-' + (KODE || 'room').toLowerCase() + '-' + today() + '.' + ext; }
   function unduhCadangan() {
-    var isi = { versi: 2, room: RNAMA, kode: KODE, waktu: new Date().toISOString(), cfg: CFG, fitur: FITUR, bayar: BAYAR, members: M, pay: P, exp: X, log: LOG, iur: IUR, ipay: IP };
+    var isi = { versi: 2, room: RNAMA, kode: KODE, waktu: new Date().toISOString(), cfg: CFG, fitur: FITUR, bayar: BAYAR, members: M, pay: P, exp: X, log: LOG, iur: IUR, ipay: IP, iexp: IX };
     unduh(namaBerkas('json'), JSON.stringify(isi, null, 1), 'application/json');
     $('#dmsg').textContent = 'Cadangan diunduh: ' + M.length + ' anggota, ' + P.length + ' iuran, ' + X.length + ' catatan lain, ' + IUR.length + ' iuran bersama.';
   }
   function unduhRekap() {
     var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-    var baris = [['Nama', 'NIM', 'Status', 'Mulai ditagih', 'Total dibayar', 'Total ditagih', 'Kurang', 'Kelebihan'].map(q).join(',')];
+    var baris = [['Nama', 'NIM', 'Status', 'Mulai ditagih', 'Total dibayar', 'Total ditagih', 'Kurang', 'Bayar di muka'].map(q).join(',')];
     D.slice().sort(byNama).forEach(function (m) {
-      baris.push([m.nama, m.nim, isAktif(m) ? (m.kurang > 0 ? 'Belum lunas' : 'Lunas') : 'Nonaktif', m.mulai, m.paid, m.tagih, m.kurang, m.kredit].map(q).join(','));
+      baris.push([m.nama, m.nim, isAktif(m) ? (m.kurang > 0 ? 'Belum lunas' : 'Lunas') : 'Nonaktif', m.mulai, m.paid, m.tagih, m.kurang, m.dimuka].map(q).join(','));
     });
     unduh(namaBerkas('csv'), '﻿' + baris.join('\r\n'), 'text/csv;charset=utf-8');
     $('#dmsg').textContent = 'Rekap iuran ' + D.length + ' anggota diunduh (bisa dibuka di Excel).';
@@ -773,32 +799,64 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     return n;
   }
 
-  /** Hitung tagihan, pembayaran, kurang/lebih, dan status satu anggota. */
+  /**
+   * Hitung satu anggota. Setiap pembayaran (urut tanggal) mengisi periode paling lama dulu (FIFO):
+   * tunggakan -> periode berjalan -> periode depan (baris fut). Sisa yang kurang dari satu periode
+   * menjadi cicilan periode berikutnya. Anggota nonaktif tidak punya periode depan: lebihnya milik kas.
+   */
   function hitung(m) {
     var skrg = cur();
-    var akhir = (m.aktif === false && m.selesai && m.selesai < skrg) ? m.selesai : skrg;
+    var nonaktif = m.aktif === false;
+    var akhir = (nonaktif && m.selesai && m.selesai < skrg) ? m.selesai : skrg;
     var bulan = (m.mulai && m.mulai <= akhir) ? rentangBulan(m.mulai, akhir) : [];
 
-    var bayar = sum(P.filter(function (p) { return p.mid === m.id; }), jml)
+    var pays = P.filter(function (p) { return p.mid === m.id; }).sort(function (x, y) {
+      return String(x.tgl || '').localeCompare(String(y.tgl || '')) || ((x.ts || 0) - (y.ts || 0));
+    });
+    var bayar = sum(pays, jml)
               - sum(X.filter(function (x) { return x.mid === m.id && x.kind === 'kembali'; }), jml);
 
-    var sisa = bayar;
-    var rows = bulan.map(function (b) {
-      var n = nominal(b);
-      var terisi = Math.max(0, Math.min(sisa, n));
-      sisa -= terisi;
-      return { b: b, n: n, c: terisi };
+    var rows = bulan.map(function (b) { return { b: b, n: nominal(b), c: 0, tg: [], fut: false }; });
+    if (!nonaktif) {
+      var tot = sum(rows, function (r) { return r.n; });
+      var nb = rows.length ? nextKey(rows[rows.length - 1].b) : (m.mulai || skrg), guard = 600;
+      while (tot < bayar && guard-- > 0) {
+        var r0 = { b: nb, n: nominal(nb), c: 0, tg: [], fut: nb > skrg };
+        rows.push(r0); tot += r0.n; nb = nextKey(nb);
+      }
+    }
+
+    var rem = Math.max(0, bayar), ri = 0, alok = [];
+    pays.forEach(function (p) {
+      var take = Math.min(p.jumlah, rem); rem -= take;
+      while (take > 0 && ri < rows.length) {
+        var r = rows[ri], room = r.n - r.c;
+        if (room <= 0) { ri++; continue; }
+        var a = Math.min(room, take);
+        r.c += a; take -= a;
+        if (r.tg.indexOf(p.tgl) < 0) r.tg.push(p.tgl);
+        alok.push({ b: r.b, a: a, tgl: p.tgl });
+        if (r.c >= r.n) ri++;
+      }
     });
 
-    var tagih = sum(rows, function (r) { return r.n; });
-    var terakhir = rows[rows.length - 1];
+    var kini = rows.filter(function (r) { return !r.fut; });
+    var tagih = sum(kini, function (r) { return r.n; });
+    var terbayarKini = sum(kini, function (r) { return r.c; });
+    var terakhir = kini[kini.length - 1];
+    var sd = '';
+    rows.forEach(function (r) { if (r.fut && r.c >= r.n && r.c > 0) sd = r.b; });
+    var kurang = Math.max(0, tagih - terbayarKini);
     return {
       rows: rows,
+      alok: alok,
       paid: bayar,
       tagih: tagih,
-      kurang: Math.max(0, tagih - bayar),
-      kredit: Math.max(0, bayar - tagih),
-      st: tagih <= bayar ? 'lunas' : (terakhir && terakhir.c > 0 ? 'kurang' : 'belum')
+      kurang: kurang,
+      kredit: Math.max(0, bayar - sum(rows, function (r) { return r.c; })),   // lebihan yang tak punya periode (nonaktif)
+      dimuka: sum(rows.filter(function (r) { return r.fut; }), function (r) { return r.c; }),
+      sd: sd,
+      st: kurang === 0 ? 'lunas' : (terakhir && terakhir.c > 0 ? 'kurang' : 'belum')
     };
   }
 
@@ -939,18 +997,18 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var lain = sum(X.filter(function (x) { return x.kind === 'masuk'; }), jml);   // uang dari luar iuran (hadiah, donasi)
     var masuk = sum(P, jml) + lain;
     var keluar = sum(X.filter(function (x) { return x.kind !== 'masuk'; }), jml);
-    // lebihan anggota nonaktif tidak punya bulan berikutnya, jadi menjadi milik kas
-    var titipan = sum(D.filter(isAktif), function (m) { return m.kredit; });
-    var saldo = masuk - keluar - titipan;
+    var saldo = masuk - keluar;   // semua uang yang dibayar langsung masuk kas
+    var dimuka = sum(aktif, function (m) { return m.dimuka; });
     var belum = aktif.filter(function (m) { return m.kurang > 0; });
     var tunggakan = sum(aktif, function (m) { return m.kurang; });
 
     // iuran periode berjalan: siapa yang tagihan bulan ini sudah terpenuhi
     var sk = cur();
-    var ditagih = aktif.filter(function (m) { return m.rows.length && m.rows[m.rows.length - 1].b === sk; });
-    var tTarget = sum(ditagih, function (m) { return m.rows[m.rows.length - 1].n; });
-    var tTerisi = sum(ditagih, function (m) { return m.rows[m.rows.length - 1].c; });
-    var tLunas = ditagih.filter(function (m) { var r = m.rows[m.rows.length - 1]; return r.c >= r.n; }).length;
+    var rowSk = function (m) { return m.rows.filter(function (r) { return r.b === sk; })[0]; };
+    var ditagih = aktif.filter(function (m) { return rowSk(m); });
+    var tTarget = sum(ditagih, function (m) { return rowSk(m).n; });
+    var tTerisi = sum(ditagih, function (m) { return rowSk(m).c; });
+    var tLunas = ditagih.filter(function (m) { var r = rowSk(m); return r.c >= r.n; }).length;
 
     var pengeluaran = X.filter(function (x) { return x.kind !== 'kembali' && x.kind !== 'masuk'; })
       .sort(terbaru).slice(0, 5)
@@ -966,8 +1024,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       '<div class="card">' +
         '<span class="lab">Saldo kas</span>' +
         '<span class="big mono ' + (saldo < 0 ? 'out' : '') + '">' + rp(saldo) + '</span>' +
-        '<p class="sm">Uang di tangan bendahara: ' + rp(masuk - keluar) +
-          (titipan > 0 ? ' &middot; titipan anggota: ' + rp(titipan) : '') + '</p>' +
+        '<p class="sm">Uang di tangan bendahara' + (dimuka > 0 ? ', termasuk bayar di muka ' + rp(dimuka) : '') + '</p>' +
         '<div class="grid">' +
           '<div><span class="lab in">Masuk</span><div class="mono">' + rp(masuk) + '</div>' +
             (lain > 0 ? '<span class="sm">termasuk ' + rp(lain) + ' pemasukan lain</span>' : '') + '</div>' +
@@ -1031,8 +1088,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
    * Tab: Anggota
    * ========================================================= */
   function chipStatus(m) {
-    return m.aktif === false
-      ? '<span class="chip off">nonaktif</span>'
+    if (m.aktif === false) return '<span class="chip off">nonaktif</span>';
+    return m.st === 'lunas' && m.sd
+      ? '<span class="chip lunas">Lunas (s.d. ' + esc(akhirLabel(m.sd)) + ')</span>'
       : '<span class="chip ' + m.st + '">' + m.st + '</span>';
   }
 
@@ -1053,7 +1111,6 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
           '<div><b>' + esc(m.nama) + '</b><small>' + esc(m.nim || 'tanpa NIM') + '</small></div>' +
           '<div style="text-align:right">' + chipStatus(m) +
             (m.kurang > 0 && isAktif(m) ? '<div class="sm mono">kurang ' + rp(m.kurang) + '</div>' : '') +
-            (m.kredit > 0 ? '<div class="sm mono in">lebih ' + rp(m.kredit) + '</div>' : '') +
           '</div>' +
         '</div>';
       return sel === m.id ? row + detail(m) : row;
@@ -1066,11 +1123,15 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function detail(m) {
     var bayar = P.filter(function (p) { return p.mid === m.id; }).sort(terbaru);
 
-    var tabel = '<table><tr><th>' + (MINGGU() ? 'Minggu' : 'Bulan') + '</th><th>Tagihan</th><th>Terbayar</th></tr>' +
+    var tabel = '<div style="overflow-x:auto"><table><tr><th>' + (MINGGU() ? 'Minggu' : 'Bulan') + '</th><th>Tagihan</th><th>Terbayar</th><th>Tgl bayar</th></tr>' +
       m.rows.slice().reverse().map(function (r) {
+        var muka = r.tg.some(function (t) { return kunci(t) < r.b; });
         return '<tr><td>' + bln(r.b) + '</td><td class="mono">' + rp(r.n) + '</td>' +
-               '<td class="mono ' + (r.c >= r.n ? 'in' : 'out') + '">' + rp(r.c) + '</td></tr>';
-      }).join('') + '</table>';
+               '<td class="mono ' + (r.c >= r.n ? 'in' : 'out') + '">' + rp(r.c) +
+                 (r.c < r.n ? '<span class="dm" style="color:var(--out)">Kurang ' + rp(r.n - r.c) + '</span>' : '') + '</td>' +
+               '<td class="sm">' + (r.tg.length ? r.tg.map(tglPendek).join(', ') : '-') +
+                 (muka ? '<span class="dm">(Bayar di muka)</span>' : '') + '</td></tr>';
+      }).join('') + '</table></div>';
 
     var info = '<p class="sm">Mulai ditagih: ' + (m.mulai ? bln(m.mulai) : '-') +
       (m.selesai ? ' &middot; berhenti: ' + bln(m.selesai) : '') + '</p>';
@@ -1156,6 +1217,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
     if (a === 'ibo') { iSel = id; fill(); window.scrollTo(0, 0); return; }
     if (a === 'ibk') { iSel = ''; fill(); window.scrollTo(0, 0); return; }
+    if (a === 'ibu') { unduhRekapIB(id); return; }
+    if (a === 'ibua') { unduhRekapSemuaIB(); return; }
+    if (a === 'ibr') { var ir = IUR.filter(function (x) { return x.id === id; })[0]; if (ir) salin(teksRingkasIB(ir), b); return; }
 
     if (!db || !canEdit) return;
     if (a === 'pen') { edBuka = (edBuka === id) ? '' : id; memEd = null; gambarAnggota(); return; }
@@ -1164,6 +1228,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (a === 'ibt') { tutupIB(id); return; }
     if (a === 'ibh' && isHost) { hapusIB(id); return; }
     if (a === 'ibp') { hapusBayarIB(id); return; }
+    if (a === 'ibx') { hapusKeluarIB(id); return; }
     if (a === 'xj') { unduhCadangan(); return; }
     if (a === 'xc') { unduhRekap(); return; }
     if (a === 'sl' && isHost) { salinDataLama(b); return; }
@@ -1578,22 +1643,34 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
    * Tab: Laporan
    * ========================================================= */
   function fLaporan() {
-    var semua = P.map(function (p) { return { t: kunci(p.tgl), i: p.jumlah, o: 0 }; })
-      .concat(X.map(function (x) { return x.kind === 'masuk' ? { t: kunci(x.tgl), i: x.jumlah, o: 0 } : { t: kunci(x.tgl), i: 0, o: x.jumlah }; }));
-
+    var skrg = cur();
     var lainTotal = sum(X.filter(function (x) { return x.kind === 'masuk'; }), jml);
-    var perBulan = {};
-    semua.forEach(function (r) {
-      if (!r.t) return;
-      var o = perBulan[r.t] || (perBulan[r.t] = { i: 0, o: 0 });
-      o.i += r.i; o.o += r.o;
+    var total = sum(P, jml) + lainTotal - sum(X.filter(function (x) { return x.kind !== 'masuk'; }), jml);   // = saldo Beranda
+    var per = {};
+    var at = function (k) { return per[k] || (per[k] = { i: 0, o: 0, fwd: 0, muka: 0 }); };
+    P.forEach(function (p) { var k = kunci(p.tgl); if (k) at(k).i += p.jumlah; });
+    X.forEach(function (x) {
+      var k = kunci(x.tgl); if (!k) return;
+      if (x.kind === 'masuk') at(k).i += x.jumlah; else at(k).o += x.jumlah;
     });
+    // alokasi pembayaran ke periode yang lebih baru dari tanggal bayarnya = "di muka"
+    D.forEach(function (m) {
+      (m.alok || []).forEach(function (z) {
+        var kp = kunci(z.tgl);
+        if (kp && kp < z.b) { at(kp).fwd += z.a; at(z.b).muka += z.a; }
+      });
+    });
+    if (Object.keys(per).length) at(skrg);
 
-    var saldo = 0;
-    var baris = Object.keys(perBulan).sort().map(function (k) {
-      saldo += perBulan[k].i - perBulan[k].o;
-      return '<tr><td>' + bln(k) + '</td><td class="mono in">' + rp(perBulan[k].i) + '</td>' +
-             '<td class="mono out">' + rp(perBulan[k].o) + '</td><td class="mono">' + rp(saldo) + '</td></tr>';
+    var run = 0;
+    var baris = Object.keys(per).sort().map(function (k) {
+      var o = per[k], depan = k > skrg, kini = k === skrg;
+      if (!depan) run += o.i - o.o;
+      return '<tr><td>' + bln(k) + (kini ? '<span class="dm" style="color:var(--muted)">berjalan</span>' : (depan ? '<span class="dm" style="color:var(--muted)">akan datang</span>' : '')) + '</td>' +
+        '<td class="mono in">' + rp(o.i - o.fwd) + (o.muka > 0 ? '<span class="dm">+' + rp(o.muka) + ' (di muka)</span>' : '') + '</td>' +
+        (depan
+          ? '<td class="mono">-</td><td class="mono">-</td>'
+          : '<td class="mono out">' + rp(o.o) + '</td><td class="mono">' + rp(kini ? total : run) + '</td>') + '</tr>';
     }).reverse().join('');
 
     var KAT = [['', 'Semua'], ['keuangan', 'Keuangan'], ['anggota', 'Anggota'], ['pengurus', 'Pengurus'], ['batal', 'Dibatalkan']];
@@ -1604,9 +1681,10 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
     $('#rep').innerHTML =
       '<div class="card"><h2>Rekap ' + (MINGGU() ? 'mingguan' : 'bulanan') + '</h2><div style="overflow-x:auto"><table>' +
-        '<tr><th>' + (MINGGU() ? 'Minggu' : 'Bulan') + '</th><th>Masuk</th><th>Keluar</th><th>Uang di tangan</th></tr>' +
+        '<tr><th>' + (MINGGU() ? 'Minggu' : 'Bulan') + '</th><th>Masuk</th><th>Keluar</th><th>Saldo</th></tr>' +
         (baris || '<tr><td colspan="4" class="sm">Belum ada data.</td></tr>') +
       '</table></div>' +
+      '<p class="sm">Masuk = uang yang dibayar pada ' + SATUAN() + ' itu; tulisan biru kecil = bagian yang sudah dibayar lebih awal untuk ' + SATUAN() + ' itu. Saldo ' + SATUAN() + ' berjalan = seluruh uang di tangan bendahara (termasuk bayar di muka).</p>' +
       (lainTotal > 0 ? '<p class="sm">Kolom Masuk sudah termasuk pemasukan lain (hadiah, donasi) sebesar ' + rp(lainTotal) + '.</p>' : '') +
       '</div>' +
       '<div class="card"><h2>Riwayat perubahan</h2>' +
@@ -1645,7 +1723,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
   function gambarAnggota() { if (mode() === 'iuran') fAnggotaI(); else fAnggota(); }
   function gambarLaporan() { if (mode() === 'iuran') fLaporanI(); else fLaporan(); }
-  function siapIB() { return IBMUAT.iur && IBMUAT.ipay; }
+  function siapIB() { return IBMUAT.iur && IBMUAT.ipay && IBMUAT.iexp; }
   function tglID(s) {
     var d = new Date(s + 'T00:00:00');
     return isNaN(d) ? s : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1684,9 +1762,11 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       var c = byM[id] || 0;
       return { m: m, c: c, st: i.per > 0 ? (c >= i.per ? 'lunas' : (c > 0 ? 'kurang' : 'belum')) : (c > 0 ? 'lunas' : 'belum') };
     }).filter(Boolean).sort(function (a, b) { return byNama(a.m, b.m); });
+    var keluar = sum(IX.filter(function (x) { return x.iid === i.id; }), jml), kumpul = sum(pay, jml);
     return {
       rows: rows, pay: pay, n: rows.length,
-      terkumpul: sum(pay, jml),
+      keluar: keluar, sisa: kumpul - keluar,
+      terkumpul: kumpul,
       target: i.per > 0 ? i.per * rows.length : 0,
       lunas: rows.filter(function (r) { return r.st === 'lunas'; }).length
     };
@@ -1722,6 +1802,11 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             '<select id="qm" required aria-label="Pilih anggota"></select>' +
             '<div class="row"><input id="qt" type="date" required><input id="qj" inputmode="numeric" placeholder="Jumlah (Rp)" required></div>' +
             '<button class="btn">Simpan pembayaran</button><p id="qmsg" class="sm"></p></form>' +
+          '<form id="fz" class="card"><h2>Catat pengeluaran iuran</h2>' +
+            '<select id="zi" required aria-label="Pilih iuran"></select>' +
+            '<input id="zk" placeholder="Keperluan, misalnya cetak toga" maxlength="200" required>' +
+            '<div class="row"><input id="zt" type="date" required><input id="zj" inputmode="numeric" placeholder="Jumlah (Rp)" required></div>' +
+            '<button class="btn">Simpan pengeluaran</button><p id="zmsg" class="sm"></p></form>' +
           '<form id="fr2" class="card"><h2>Tambah iuran</h2>' +
             '<input id="inm" placeholder="Nama iuran, misalnya Wisuda" maxlength="60" required>' +
             '<div class="row"><input id="ipr2" inputmode="numeric" placeholder="Nominal per anggota (kosong = bebas)"><input id="itg" type="date" aria-label="Tenggat"></div>' +
@@ -1729,9 +1814,10 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             '<button class="btn">Buat iuran</button><p id="imsg2" class="sm"></p></form>' +
           '<div class="card"><h2>Pembayaran terakhir</h2><div id="hist"></div></div>' +
         '</div>';
-      $('#qt').value = today();
-      maskRupiah($('#qj')); maskRupiah($('#ipr2'));
+      $('#qt').value = $('#zt').value = today();
+      maskRupiah($('#qj')); maskRupiah($('#ipr2')); maskRupiah($('#zj'));
       $('#fq').onsubmit = catatIB;
+      $('#fz').onsubmit = catatKeluarIB;
       $('#fr2').onsubmit = buatIB;
     }
     if (tab === 'laporan') v.innerHTML = '<div id="rep" class="wrap"></div>';
@@ -1740,7 +1826,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
   function fillI() {
     if (!siap() || !siapIB()) return;
-    var perlu = { home: '#sum', anggota: '#list', catat: '#fq', laporan: '#rep' }[tab];
+    var perlu = { home: '#sum', anggota: '#list', catat: '#fz', laporan: '#rep' }[tab];
     if (!$(perlu)) { showI(); return; }
     derive();
     keepEd();
@@ -1758,6 +1844,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         ? rp(r.terkumpul) + ' dari ' + rp(r.target) + ' &middot; ' + r.lunas + ' dari ' + r.n + ' lunas (' + rp(i.per) + ' per anggota)'
         : rp(r.terkumpul) + ' terkumpul &middot; ' + r.lunas + ' dari ' + r.n + ' sudah bayar (nominal bebas)') + '</span>' +
       (i.per > 0 ? '<span class="track"><i style="width:' + pct + '%"></i></span>' : '') +
+      (r.keluar > 0 || i.tutup ? '<span class="sm">Keluar ' + rp(r.keluar) + ' &middot; sisa <b>' + rp(r.sisa) + '</b></span>' : '') +
       (i.tenggat ? '<span class="sm">Tenggat ' + esc(tglID(i.tenggat)) + '</span>' : '') +
     '</button>';
   }
@@ -1769,7 +1856,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     $('#sum').innerHTML = bantuDev() +
       '<div class="card"><span class="lab">Terkumpul di ' + NAMA_IB.toLowerCase() + '</span>' +
         '<span class="big mono">' + rp(sum(IP, jml)) + '</span>' +
-        '<p class="sm">' + buka.length + ' iuran berjalan' + (tutup.length ? ' &middot; ' + tutup.length + ' ditutup' : '') + '</p></div>' +
+        '<p class="sm">' + buka.length + ' iuran berjalan' + (tutup.length ? ' &middot; ' + tutup.length + ' ditutup' : '') +
+          (IX.length ? ' &middot; keluar ' + rp(sum(IX, jml)) + ' &middot; sisa <b>' + rp(sum(IP, jml) - sum(IX, jml)) + '</b>' : '') + '</p></div>' +
       (buka.map(kartuIB).join('') ||
         '<div class="card"><p class="sm">Belum ada iuran berjalan.' + (canEdit ? ' Buat di tab Catat.' : '') + '</p></div>') +
       (tutup.length ? '<h2 style="margin-top:6px">Iuran ditutup</h2>' + tutup.map(kartuIB).join('') : '') +
@@ -1777,7 +1865,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
 
   function fRincianI() {
-    var i = IUR.filter(function (x) { return x.id === iSel; })[0], r = ringI(i);
+    var i = IUR.filter(function (x) { return x.id === iSel; })[0], r = ringI(i), bisaUbah = canEdit && !i.tutup;
     var pct = r.target ? Math.min(100, Math.round(r.terkumpul / r.target * 100)) : 0, urutSt = { belum: 0, kurang: 1, lunas: 2 };
     var peserta = r.rows.slice().sort(function (a, b) { return urutSt[a.st] - urutSt[b.st] || byNama(a.m, b.m); }).map(function (x) {
       return '<div class="pv"><span><b>' + esc(x.m.nama) + '</b>' + (x.m.nim ? ' <small class="sm">' + esc(x.m.nim) + '</small>' : '') + '</span>' +
@@ -1787,17 +1875,26 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var bayar = r.pay.slice().sort(terbaru).slice(0, 30).map(function (p) {
       var m = M.filter(function (z) { return z.id === p.mid; })[0] || { nama: '?' };
       return '<div class="pv hv"><span>' + esc(p.tgl) + '</span><span>' + esc(m.nama) + '</span><span class="mono in">' + rp(p.jumlah) + '</span>' +
-        (canEdit ? '<span class="acts"><button class="btn ghost sm2 del" data-a="ibp" data-id="' + p.id + '">' + (armed === 'ibp' + p.id ? 'Yakin?' : 'Hapus') + '</button></span>' : '') + '</div>';
+        (bisaUbah ? '<span class="acts"><button class="btn ghost sm2 del" data-a="ibp" data-id="' + p.id + '">' + (armed === 'ibp' + p.id ? 'Yakin?' : 'Hapus') + '</button></span>' : '') + '</div>';
+    }).join('');
+    var keluarList = IX.filter(function (x) { return x.iid === i.id; }).sort(terbaru).map(function (x) {
+      return '<div class="pv hv"><span>' + esc(x.tgl) + '</span><span>' + esc(x.ket) + '</span><span class="mono out">' + rp(x.jumlah) + '</span>' +
+        (bisaUbah ? '<span class="acts"><button class="btn ghost sm2 del" data-a="ibx" data-id="' + x.id + '">' + (armed === 'ibx' + x.id ? 'Yakin?' : 'Hapus') + '</button></span>' : '') + '</div>';
     }).join('');
     $('#sum').innerHTML = bantuDev() +
       '<button class="lnk" type="button" data-a="ibk" style="align-self:flex-start">&larr; Semua iuran</button>' +
       '<div class="card"><h2>' + esc(i.nama) + (i.tutup ? ' <span class="chip off">ditutup</span>' : '') + '</h2>' +
-        '<span class="big mono">' + rp(r.terkumpul) + '</span>' +
+        '<span class="lab">Terkumpul</span><span class="big mono">' + rp(r.terkumpul) + '</span>' +
         '<p class="sm">' + (i.per > 0
           ? 'dari target ' + rp(r.target) + ' (' + rp(i.per) + ' &times; ' + r.n + ' anggota) &middot; ' + r.lunas + ' lunas'
           : r.lunas + ' dari ' + r.n + ' anggota sudah bayar &middot; nominal bebas') +
           (i.tenggat ? ' &middot; tenggat ' + esc(tglID(i.tenggat)) : '') + '</p>' +
         (i.per > 0 ? '<div class="track"><i style="width:' + pct + '%"></i></div>' : '') +
+        '<div class="grid">' +
+          '<div><span class="lab out">Keluar</span><div class="mono">' + rp(r.keluar) + '</div></div>' +
+          '<div><span class="lab in">Sisa</span><div class="mono ' + (r.sisa < 0 ? 'out' : '') + '">' + rp(r.sisa) + '</div></div>' +
+        '</div>' +
+        (i.tutup ? '<p class="sm">Iuran ditutup: pembayaran dan pengeluaran dikunci. Buka kembali bila perlu mengubah.</p>' : '') +
         (canEdit
           ? '<div class="row">' +
               (i.tutup ? '' : '<button class="btn" type="button" data-a="ibc">Catat pembayaran</button>') +
@@ -1806,8 +1903,12 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             '</div>'
           : '') +
       '</div>' +
+      '<div class="card"><h2>Rekap</h2><p class="sm">Bagikan atau simpan ringkasan iuran ini.</p>' +
+        '<div class="row"><button class="btn ghost" type="button" data-a="ibr" data-id="' + i.id + '">Salin ringkasan</button>' +
+        '<button class="btn ghost" type="button" data-a="ibu" data-id="' + i.id + '">Unduh rekap (CSV)</button></div></div>' +
       '<div class="card"><h2>Peserta</h2>' + (peserta || '<p class="sm">Belum ada anggota.</p>') + '</div>' +
-      '<div class="card"><h2>Pembayaran</h2>' + (bayar || '<p class="sm">Belum ada pembayaran.</p>') + '</div>';
+      '<div class="card"><h2>Pembayaran</h2>' + (bayar || '<p class="sm">Belum ada pembayaran.</p>') + '</div>' +
+      '<div class="card"><h2>Pengeluaran</h2>' + (keluarList || '<p class="sm">Belum ada pengeluaran.' + (canEdit && !i.tutup ? ' Catat di tab Catat.' : '') + '</p>') + '</div>';
   }
 
   /* ---- Anggota ---- */
@@ -1868,15 +1969,28 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     sm.value = vm;
     si.onchange = sm.onchange = isiSisaIB;
 
-    var H = IP.slice().sort(terbaru).slice(0, histN);
-    $('#hist').innerHTML = (H.map(function (p) {
-      var m = M.filter(function (z) { return z.id === p.mid; })[0] || { nama: '?' };
-      var i = IUR.filter(function (z) { return z.id === p.iid; })[0] || { nama: '?' };
-      return '<div class="pv hv"><span>' + esc(p.tgl) + '</span><span>' + esc(m.nama) + ' &middot; ' + esc(i.nama) + '</span>' +
-        '<span class="mono in">+' + rp(p.jumlah) + '</span>' +
-        '<span class="acts"><button class="btn ghost sm2 del" data-a="ibp" data-id="' + p.id + '">' + (armed === 'ibp' + p.id ? 'Yakin?' : 'Hapus') + '</button></span></div>';
-    }).join('') || '<p class="sm">Belum ada pembayaran.</p>') +
-      (IP.length > histN ? '<button class="btn ghost" type="button" data-a="more" style="margin-top:8px">Tampilkan lebih banyak</button>' : '');
+    var sz = $('#zi'), vz = sz.value;
+    sz.innerHTML = '<option value="">Pilih iuran</option>' + terbuka.map(function (i) {
+      return '<option value="' + i.id + '" data-lbl="' + esc(i.nama) + '" data-sub="sisa ' + rp(ringI(i).sisa) + '">' + esc(i.nama) + '</option>';
+    }).join('');
+    sz.value = vz;
+    if (sz.value !== vz) sz.value = '';
+
+    var nama = function (id) { return (IUR.filter(function (z) { return z.id === id; })[0] || { nama: '?' }); };
+    var semuaH = IP.map(function (p) {
+      var m = M.filter(function (z) { return z.id === p.mid; })[0] || { nama: '?' }, i = nama(p.iid);
+      return { id: p.id, tgl: p.tgl, ts: p.ts, t: 'in', ket: m.nama + ' · ' + i.nama, j: p.jumlah, a: 'ibp', kunci: !!i.tutup };
+    }).concat(IX.map(function (x) {
+      var i = nama(x.iid);
+      return { id: x.id, tgl: x.tgl, ts: x.ts, t: 'out', ket: i.nama + ': ' + x.ket, j: x.jumlah, a: 'ibx', kunci: !!i.tutup };
+    })).sort(terbaru), H = semuaH.slice(0, histN);
+    $('#hist').innerHTML = (H.map(function (h) {
+      return '<div class="pv hv"><span>' + esc(h.tgl) + '</span><span>' + esc(h.ket) + '</span>' +
+        '<span class="mono ' + h.t + '">' + (h.t === 'in' ? '+' : '-') + rp(h.j) + '</span>' +
+        (h.kunci ? '<span class="sm">terkunci</span>'
+                 : '<span class="acts"><button class="btn ghost sm2 del" data-a="' + h.a + '" data-id="' + h.id + '">' + (armed === h.a + h.id ? 'Yakin?' : 'Hapus') + '</button></span>') + '</div>';
+    }).join('') || '<p class="sm">Belum ada catatan.</p>') +
+      (semuaH.length > histN ? '<button class="btn ghost" type="button" data-a="more" style="margin-top:8px">Tampilkan lebih banyak</button>' : '');
   }
   /** Isi otomatis jumlah dengan sisa yang belum dibayar (bila iuran bernominal tetap). */
   function isiSisaIB() {
@@ -1925,7 +2039,78 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     });
   }
 
+  function catatKeluarIB(e) {
+    e.preventDefault();
+    var iid = $('#zi').value, ket = $('#zk').value.trim().replace(/\s+/g, ' '), j = num($('#zj').value), t = $('#zt').value, msg = $('#zmsg');
+    var i = IUR.filter(function (x) { return x.id === iid; })[0];
+    if (!i || !ket || !j || !t) { msg.className = 'err'; msg.textContent = 'Lengkapi iuran, keperluan, tanggal, dan jumlah.'; return; }
+    if (i.tutup) { msg.className = 'err'; msg.textContent = 'Iuran ini sudah ditutup. Buka kembali dulu.'; return; }
+    var k = 'z|' + iid + '|' + ket + '|' + t + '|' + j;
+    if (dup !== k && IX.some(function (x) { return x.iid === iid && x.ket === ket && x.tgl === t && x.jumlah === j; })) {
+      dup = k; msg.className = 'err';
+      msg.textContent = 'Sudah ada pengeluaran yang sama untuk ' + i.nama + '. Ketuk Simpan lagi bila memang benar dua kali.';
+      return;
+    }
+    dup = '';
+    var r = ringI(i), pesan = 'Tersimpan: ' + ket + ' ' + rp(j) + ' untuk ' + i.nama + '.' + (r.sisa - j < 0 ? ' Perhatian: pengeluaran melebihi uang terkumpul (sisa ' + rp(r.sisa - j) + ').' : '');
+    msg.className = 'sm'; msg.textContent = 'Menyimpan…';
+    $('#zj').value = ''; $('#zk').value = '';
+    simpan(function (b) { b.set(db.collection('iexp').doc(), { iid: iid, tgl: t, ket: ket, jumlah: j, ts: Date.now() }); },
+      'Catat keluar iuran', i.nama + ': ' + ket + ' ' + rp(j) + ' tgl ' + t).then(function (ok) {
+      msg.className = ok ? 'ok' : 'err';
+      msg.textContent = ok ? pesan : 'Gagal menyimpan. Isi lagi dan coba ulang.';
+    });
+  }
+  function hapusKeluarIB(id) {
+    var x = IX.filter(function (z) { return z.id === id; })[0];
+    if (!x) return;
+    var i = IUR.filter(function (z) { return z.id === x.iid; })[0] || { nama: '?' };
+    if (i.tutup) { note('Iuran ' + esc(i.nama) + ' ditutup. Buka kembali dulu untuk mengubah.', 'red'); return; }
+    if (!arm('ibx' + id)) return;
+    simpan(function (b) { b.delete(db.doc('iexp/' + id)); }, 'Hapus keluar iuran', i.nama + ': ' + x.ket + ' ' + rp(x.jumlah) + ' tgl ' + x.tgl);
+  }
+
+  /** Ringkasan teks satu iuran untuk ditempel ke WhatsApp. */
+  function teksRingkasIB(i) {
+    var r = ringI(i), belum = r.rows.filter(function (x) { return x.st !== 'lunas'; });
+    var t = [(RNAMA ? RNAMA + ' · ' : '') + 'Iuran ' + i.nama + (i.tutup ? ' (ditutup)' : ''),
+      'Terkumpul: ' + rp(r.terkumpul) + (i.per > 0 ? ' dari ' + rp(r.target) + ' (' + r.lunas + ' dari ' + r.n + ' lunas, ' + rp(i.per) + ' per anggota)' : ' (' + r.lunas + ' dari ' + r.n + ' sudah bayar)'),
+      'Pengeluaran: ' + rp(r.keluar), 'Sisa: ' + rp(r.sisa)];
+    if (i.tenggat) t.push('Tenggat: ' + tglID(i.tenggat));
+    if (belum.length) t.push('', (i.per > 0 ? 'Belum lunas (' : 'Belum bayar (') + belum.length + '):' ,
+      belum.map(function (x) { return '- ' + x.m.nama + (i.per > 0 ? ' (kurang ' + rp(i.per - x.c) + ')' : ''); }).join('\n'));
+    else t.push('', 'Semua anggota sudah lunas.');
+    return t.join('\n');
+  }
+  function csvQ(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+  function unduhRekapIB(id) {
+    var i = IUR.filter(function (x) { return x.id === id; })[0];
+    if (!i) return;
+    var r = ringI(i), b = [], L = function (a) { b.push(a.map(csvQ).join(',')); };
+    L(['Iuran', i.nama]); L(['Room', RNAMA]); L(['Nominal per anggota', i.per > 0 ? i.per : 'Bebas']); L(['Tenggat', i.tenggat || '']);
+    L(['Status', i.tutup ? 'Ditutup' : 'Berjalan']); L(['Terkumpul', r.terkumpul]); L(['Target', i.per > 0 ? r.target : '']); L(['Pengeluaran', r.keluar]); L(['Sisa', r.sisa]);
+    b.push(''); L(['Nama', 'NIM', 'Status', 'Dibayar', 'Kurang']);
+    r.rows.forEach(function (x) { L([x.m.nama, x.m.nim, x.st === 'lunas' ? (i.per > 0 ? 'Lunas' : 'Sudah bayar') : (x.st === 'kurang' ? 'Kurang' : 'Belum'), x.c, i.per > 0 ? Math.max(0, i.per - x.c) : '']); });
+    b.push(''); L(['Pengeluaran', 'Tanggal', 'Jumlah']);
+    IX.filter(function (x) { return x.iid === id; }).sort(terbaru).forEach(function (x) { L([x.ket, x.tgl, x.jumlah]); });
+    b.push(''); L(['Pembayaran', 'Tanggal', 'Jumlah']);
+    r.pay.slice().sort(terbaru).forEach(function (p) { var m = M.filter(function (z) { return z.id === p.mid; })[0] || {}; L([m.nama || '?', p.tgl, p.jumlah]); });
+    unduh('iuran-' + String(i.nama).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + today() + '.csv', '\uFEFF' + b.join('\r\n'), 'text/csv;charset=utf-8');
+    note('Rekap ' + esc(i.nama) + ' diunduh (bisa dibuka di Excel).');
+  }
+  function unduhRekapSemuaIB() {
+    var b = [['Iuran', 'Status', 'Nominal per anggota', 'Tenggat', 'Terkumpul', 'Target', 'Pengeluaran', 'Sisa', 'Lunas', 'Peserta'].map(csvQ).join(',')];
+    iurUrut().forEach(function (i) {
+      var r = ringI(i);
+      b.push([i.nama, i.tutup ? 'Ditutup' : 'Berjalan', i.per > 0 ? i.per : 'Bebas', i.tenggat || '', r.terkumpul, i.per > 0 ? r.target : '', r.keluar, r.sisa, r.lunas, r.n].map(csvQ).join(','));
+    });
+    unduh(namaBerkas('csv').replace('kas-', 'iuran-'), '\uFEFF' + b.join('\r\n'), 'text/csv;charset=utf-8');
+    note('Rekap semua iuran diunduh (bisa dibuka di Excel).');
+  }
+
   function hapusBayarIB(id) {
+    var pp = IP.filter(function (x) { return x.id === id; })[0], ii = pp && IUR.filter(function (x) { return x.id === pp.iid; })[0];
+    if (ii && ii.tutup) { note('Iuran ' + esc(ii.nama) + ' ditutup. Buka kembali dulu untuk mengubah.', 'red'); return; }
     if (!arm('ibp' + id)) return;
     var p = IP.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
@@ -1941,11 +2126,11 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     if (!arm('ibh' + id)) return;
     var i = IUR.filter(function (x) { return x.id === id; })[0];
     if (!i) return;
-    var pay = IP.filter(function (x) { return x.iid === id; });
-    if (pay.length > 450) { note('Iuran ini punya terlalu banyak pembayaran untuk dihapus sekaligus. Tutup saja, atau hubungi Dev.', 'red'); return; }
+    var pay = IP.filter(function (x) { return x.iid === id; }), keluarIni = IX.filter(function (x) { return x.iid === id; });
+    if (pay.length + keluarIni.length > 450) { note('Iuran ini punya terlalu banyak pembayaran untuk dihapus sekaligus. Tutup saja, atau hubungi Dev.', 'red'); return; }
     iSel = '';
-    simpan(function (b) { b.delete(db.doc('iur/' + id)); pay.forEach(function (p) { b.delete(db.doc('ipay/' + p.id)); }); },
-      'Hapus iuran', i.nama + ' (' + pay.length + ' pembayaran ikut terhapus)');
+    simpan(function (b) { b.delete(db.doc('iur/' + id)); pay.forEach(function (p) { b.delete(db.doc('ipay/' + p.id)); }); keluarIni.forEach(function (x) { b.delete(db.doc('iexp/' + x.id)); }); },
+      'Hapus iuran', i.nama + ' (' + pay.length + ' pembayaran dan ' + keluarIni.length + ' pengeluaran ikut terhapus)');
   }
 
   function simpanFitur() {
@@ -1964,7 +2149,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var baris = iurUrut().map(function (i) {
       var r = ringI(i);
       return '<tr><td>' + esc(i.nama) + (i.tutup ? ' <small class="sm">(ditutup)</small>' : '') + '</td><td class="mono in">' + rp(r.terkumpul) + '</td>' +
-        '<td class="mono">' + (i.per > 0 ? rp(r.target) : '-') + '</td><td class="mono">' + r.lunas + '/' + r.n + '</td></tr>';
+        '<td class="mono out">' + rp(r.keluar) + '</td><td class="mono">' + rp(r.sisa) + '</td><td class="mono">' + r.lunas + '/' + r.n + '</td></tr>';
     }).join('');
     var KAT = [['', 'Semua'], ['keuangan', 'Keuangan'], ['anggota', 'Anggota'], ['pengurus', 'Pengurus'], ['batal', 'Dibatalkan']];
     var riwayat = LOG.filter(function (l) { return !lf || (l.kat || kategori(l.aksi)) === lf; }).map(function (l) {
@@ -1973,10 +2158,12 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     }).join('');
     $('#rep').innerHTML =
       '<div class="card"><h2>Rekap ' + NAMA_IB.toLowerCase() + '</h2><div style="overflow-x:auto"><table>' +
-        '<tr><th>Iuran</th><th>Terkumpul</th><th>Target</th><th>Lunas</th></tr>' +
-        (baris || '<tr><td colspan="4" class="sm">Belum ada iuran.</td></tr>') +
-        (IUR.length ? '<tr><td><b>Total</b></td><td class="mono in"><b>' + rp(sum(IP, jml)) + '</b></td><td></td><td></td></tr>' : '') +
-      '</table></div></div>' +
+        '<tr><th>Iuran</th><th>Terkumpul</th><th>Keluar</th><th>Sisa</th><th>Lunas</th></tr>' +
+        (baris || '<tr><td colspan="5" class="sm">Belum ada iuran.</td></tr>') +
+        (IUR.length ? '<tr><td><b>Total</b></td><td class="mono in"><b>' + rp(sum(IP, jml)) + '</b></td><td class="mono out"><b>' + rp(sum(IX, jml)) + '</b></td><td class="mono"><b>' + rp(sum(IP, jml) - sum(IX, jml)) + '</b></td><td></td></tr>' : '') +
+      '</table></div>' +
+      (IUR.length ? '<button class="btn ghost" type="button" data-a="ibua" style="margin-top:8px">Unduh rekap semua iuran (CSV)</button>' : '') +
+      '</div>' +
       '<div class="card"><h2>Riwayat perubahan</h2>' +
         '<p class="sm">Jejak 100 perubahan terakhir, termasuk yang dibatalkan.</p>' +
         '<div class="chips">' + KAT.map(function (k) {
@@ -2201,7 +2388,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.3</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.5</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -2214,7 +2401,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   /** Khusus Dev: daftar semua room (aturan Firestore menolak siapa pun selain Dev). */
   var DVLIST = null, dhKode = '', dvBuka = '', dvInfo = {}, dvPulih = null;
   var DOTS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
-  var KOL = ['members', 'pay', 'exp', 'log', 'cfg', 'iur', 'ipay'];   // 'akses/roles' dibaca/dihapus sebagai dokumen (aturan tidak mengizinkan list)
+  var KOL = ['members', 'pay', 'exp', 'log', 'cfg', 'iur', 'ipay', 'iexp'];   // 'akses/roles' dibaca/dihapus sebagai dokumen (aturan tidak mengizinkan list)
 
   function lalu(ts) {
     if (!ts) return '-';
@@ -2339,7 +2526,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         cfg: (one({ n: 'cfg', id: 'main' })[0] || {}).d || null,
         bayar: (one({ n: 'cfg', id: 'bayar' })[0] || {}).d || null,
         fitur: (one({ n: 'cfg', id: 'fitur' })[0] || {}).d || null,
-        members: o.members, pay: o.pay, exp: o.exp, log: o.log, iur: o.iur, ipay: o.ipay
+        members: o.members, pay: o.pay, exp: o.exp, log: o.log, iur: o.iur, ipay: o.ipay, iexp: o.iexp
       };
       unduh('kas-' + kode.toLowerCase() + '-cadangan-' + today() + '.json', JSON.stringify(isi, null, 1), 'application/json');
       audit(kode, o.meta.nama, 'Unduh cadangan', o.members.length + ' anggota, ' + o.pay.length + ' iuran');
@@ -2379,7 +2566,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       if (d.cfg) ops.push([root.collection('cfg').doc('main'), d.cfg]);
       if (d.bayar) ops.push([root.collection('cfg').doc('bayar'), d.bayar]);
       if (d.fitur) ops.push([root.collection('cfg').doc('fitur'), d.fitur]);
-      ['members', 'pay', 'exp', 'iur', 'ipay'].forEach(function (c) { (d[c] || []).forEach(function (x) { ops.push([root.collection(c).doc(x.id), x.d]); }); });
+      ['members', 'pay', 'exp', 'iur', 'ipay', 'iexp'].forEach(function (c) { (d[c] || []).forEach(function (x) { ops.push([root.collection(c).doc(x.id), x.d]); }); });
       (d.log || []).forEach(function (x) { if (!ada[x.id]) ops.push([root.collection('log').doc(x.id), x.d]); });
       ops.push([fdb.collection('audit').doc(), { ts: Date.now(), kode: kode, nama: d.nama, aksi: 'Pulihkan room', ket: d.members.length + ' anggota' }]);
       var p = Promise.resolve();
@@ -2614,8 +2801,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     }, function () {
       if (fiturPertama) { fiturPertama = false; tandaiMuat(); }
     });
-    ['iur', 'ipay'].forEach(function (c) {
-      var pertama = true, simpanData = function (a) { if (c === 'iur') IUR = a; else IP = a; };
+    ['iur', 'ipay', 'iexp'].forEach(function (c) {
+      var pertama = true, simpanData = function (a) { if (c === 'iur') IUR = a; else if (c === 'ipay') IP = a; else IX = a; };
       db.collection(c).onSnapshot(function (sn) {
         var ambil = function () { simpanData(sn.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); })); };
         if (pertama) { pertama = false; ambil(); IBMUAT[c] = true; fill(); return; }
