@@ -208,6 +208,16 @@ textarea { min-height: 110px; resize: vertical; }
 .btn.sm2 { min-height: 34px; padding: 0 12px; font-size: .85rem; }
 .btn.del { color: var(--out); }
 .btn:disabled { opacity: .6; cursor: default; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.seg[hidden] { display: none; }
+.seg button { height: 34px; border: 0; border-radius: 7px; background: none; color: var(--muted); font-weight: 600; font-size: .85rem; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
+.pen { display: flex; justify-content: flex-end; }
+.pen .btn { width: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.pen svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pen .btn[aria-pressed=true] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.ibk { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 6px; cursor: pointer; color: var(--ink); font: inherit; }
+.ibt { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 
 /* ===== Daftar anggota ===== */
 .m { border-top: 1px solid var(--line); padding: 10px 0; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
@@ -277,6 +287,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     </div>
   </header>
   <nav id="nav"></nav>
+  <div class="seg" id="modebar" role="group" aria-label="Tampilan" hidden></div>
   <div id="note"></div>
   <div id="stale" class="alert" hidden>Menampilkan data yang tersimpan di HP. Belum tersambung ke server, jadi angkanya mungkin belum yang terbaru.</div>
   <div id="view"></div>
@@ -314,7 +325,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     messagingSenderId: '423093944122',
     appId: '1:423093944122:web:b87e9413efbfe5dc8fda03'
   };
-  var TOTAL_SUMBER = 5; // members, pay, exp, log, cfg
+  var TOTAL_SUMBER = 6; // members, pay, exp, log, cfg/main, cfg/fitur
 
   /* =========================================================
    * State
@@ -332,6 +343,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   var CFG = { base: 10000, naik: [] };
   var BAYAR = null, bayarLangkah = 0;   // cara bayar (cfg/bayar) dan langkah pengingat sebelum nomor tampil
   var D = [];                        // anggota + hasil hitungan (derive)
+  var FITUR = null, IUR = [], IP = [];   // sakelar fitur (cfg/fitur), daftar iuran bersama, dan pembayarannya
+  var IBMUAT = { iur: false, ipay: false };
+  var iSel = '', edBuka = '', qPre = '';   // iuran yang dibuka, anggota yang form ubahnya terbuka, iuran terpilih di tab Catat
   var tab = 'home', sel = null, q = '';
   // urutan anggota diingat di perangkat ini: Anggota, Catat iuran, dan pengingat memakai urutan yang sama
   var sortBy = (function () { try { var v = localStorage.getItem('kk-urut'); return ['nama', 'nim', 'kurang'].indexOf(v) > -1 ? v : 'nama'; } catch (e) { return 'nama'; } })();
@@ -467,7 +481,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function kategori(aksi) {
     var a = String(aksi || '').toLowerCase();
     if (/^(hapus|batalkan)/.test(a)) return 'batal';
-    if (/pengurus|host|room/.test(a)) return 'pengurus';
+    if (/pengurus|host|room|fitur/.test(a)) return 'pengurus';
     if (/anggota|impor/.test(a)) return 'anggota';
     return 'keuangan';
   }
@@ -589,7 +603,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     $('#role').className = 'badge' + (isDev ? ' dev' : '');
     if (!canEdit && tab === 'catat') tab = 'home';
     if (!canEdit && (sub === 'anggota' || sub === 'iuran' || sub === 'data')) sub = '';
-    if (!isHost && (sub === 'pengurus' || sub === 'bayar')) sub = '';
+    if (!isHost && (sub === 'pengurus' || sub === 'bayar' || sub === 'fitur')) sub = '';
     pengingat = '';
     show();
   }
@@ -688,9 +702,9 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
   function namaBerkas(ext) { return 'kas-' + (KODE || 'room').toLowerCase() + '-' + today() + '.' + ext; }
   function unduhCadangan() {
-    var isi = { versi: 2, room: RNAMA, kode: KODE, waktu: new Date().toISOString(), cfg: CFG, members: M, pay: P, exp: X, log: LOG };
+    var isi = { versi: 2, room: RNAMA, kode: KODE, waktu: new Date().toISOString(), cfg: CFG, fitur: FITUR, bayar: BAYAR, members: M, pay: P, exp: X, log: LOG, iur: IUR, ipay: IP };
     unduh(namaBerkas('json'), JSON.stringify(isi, null, 1), 'application/json');
-    $('#dmsg').textContent = 'Cadangan diunduh: ' + M.length + ' anggota, ' + P.length + ' iuran, ' + X.length + ' catatan lain.';
+    $('#dmsg').textContent = 'Cadangan diunduh: ' + M.length + ' anggota, ' + P.length + ' iuran, ' + X.length + ' catatan lain, ' + IUR.length + ' iuran bersama.';
   }
   function unduhRekap() {
     var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
@@ -804,6 +818,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     el.innerHTML = t.map(function (x) {
       return '<button data-t="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>';
     }).join('');
+    renderMode();
   }
 
   function siap() { return !db || loaded >= TOTAL_SUMBER; }
@@ -815,6 +830,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
     if (tab === 'set') { fSet(); return; }
     if (!siap()) { v.innerHTML = '<p class="sm">Memuat…</p>'; return; }
+    if (mode() === 'iuran') { showI(); return; }
 
     if (tab === 'home') {
       v.innerHTML = '<div id="sum" class="wrap"></div>';
@@ -883,11 +899,12 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     derive();
     keepEd();
     if (tab === 'set') {
-      if (sub === 'anggota' || sub === 'room' || sub === 'pengurus' || sub === 'semua' || sub === 'bayar') return;   // halaman berisi isian jangan dibangun ulang saat data berubah
+      if (sub === 'anggota' || sub === 'room' || sub === 'pengurus' || sub === 'semua' || sub === 'bayar' || sub === 'fitur') return;   // halaman berisi isian jangan dibangun ulang saat data berubah
       if (sub === 'iuran') { updIuran(); return; }
       fSet();
       return;
     }
+    if (mode() === 'iuran') { fillI(); return; }
     ({ home: fHome, anggota: fAnggota, catat: fCatat, laporan: fLaporan })[tab]();
   }
 
@@ -903,7 +920,15 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
   $('#nav').addEventListener('click', function (e) {
     var b = e.target.closest('button');
-    if (b) { tab = b.dataset.t; ed = null; dup = ''; pengingat = ''; memEd = null; show(); }
+    if (b) { tab = b.dataset.t; ed = null; dup = ''; pengingat = ''; memEd = null; edBuka = ''; iSel = ''; show(); }
+  });
+  $('#modebar').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-md]');
+    if (!b || b.dataset.md === mode()) return;
+    lsSet('kk-mode-' + KODE, b.dataset.md);
+    tab = 'home'; iSel = ''; sel = null; ed = null; dup = ''; pengingat = ''; memEd = null; edBuka = '';
+    show();
+    window.scrollTo(0, 0);
   });
 
   /* =========================================================
@@ -1060,27 +1085,10 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
           : '') +
         '</div>';
     }).join('');
-    var mn = memEd && memEd.id === m.id ? memEd : { nama: m.nama, nim: m.nim };
-
     var h = '<div class="det">' + tabel + info + riwayat;
-
     if (canEdit) {
-      h += '<div class="row">' +
-             '<input id="en" value="' + esc(mn.nama) + '">' +
-             '<input id="ei" value="' + esc(mn.nim) + '" inputmode="numeric">' +
-             '<button class="btn sm2" data-a="sv" data-id="' + m.id + '">Simpan</button>' +
-           '</div><p id="emsg" class="err"></p>' +
-           '<div class="row">' +
-             '<button class="btn ghost sm2" data-a="tg" data-id="' + m.id + '">' +
-               (m.aktif === false ? 'Aktifkan lagi' : 'Nonaktifkan') + '</button>' +
-             (bayar.length
-               ? ''
-               : '<button class="btn ghost sm2 del" data-a="dm" data-id="' + m.id + '">' +
-                   (armed === 'dm' + m.id ? 'Yakin hapus?' : 'Hapus anggota') + '</button>') +
-           '</div>' +
-           (m.aktif === false && m.kredit > 0
-             ? '<p class="sm">Lebihan ' + rp(m.kredit) + ' masuk ke kas karena anggota ini nonaktif.</p>'
-             : '');
+      h += blokEdit(m, bayar.length > 0 || IP.some(function (z) { return z.mid === m.id; }),
+        m.aktif === false && m.kredit > 0 ? '<p class="sm">Lebihan ' + rp(m.kredit) + ' masuk ke kas karena anggota ini nonaktif.</p>' : '');
     }
     return h + '</div>';
   }
@@ -1094,7 +1102,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 
     if (!b) {
       var r = e.target.closest('[data-s]');
-      if (r) { sel = (sel === r.dataset.s) ? null : r.dataset.s; memEd = null; ed = null; fAnggota(); }
+      if (r) { sel = (sel === r.dataset.s) ? null : r.dataset.s; memEd = null; ed = null; edBuka = ''; gambarAnggota(); }
       return;
     }
 
@@ -1110,7 +1118,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var th = b.dataset.t, uk = b.dataset.u;
     if (th) { lsSet('kk-tema', th); fSet(); return; }
     if (uk) { lsSet('kk-ukuran', uk); fSet(); return; }
-    if (b.dataset.lf !== undefined) { lf = b.dataset.lf; fLaporan(); return; }
+    if (b.dataset.lf !== undefined) { lf = b.dataset.lf; gambarLaporan(); return; }
 
     if (a === 'out') { if (arm('out')) auth.signOut(); return; }
     if (a === 'ckd') { salin(KODE, b); return; }
@@ -1146,7 +1154,16 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       return;
     }
 
+    if (a === 'ibo') { iSel = id; fill(); window.scrollTo(0, 0); return; }
+    if (a === 'ibk') { iSel = ''; fill(); window.scrollTo(0, 0); return; }
+
     if (!db || !canEdit) return;
+    if (a === 'pen') { edBuka = (edBuka === id) ? '' : id; memEd = null; gambarAnggota(); return; }
+    if (a === 'fsim' && isHost) { simpanFitur(); return; }
+    if (a === 'ibc') { qPre = iSel; tab = 'catat'; show(); window.scrollTo(0, 0); return; }
+    if (a === 'ibt') { tutupIB(id); return; }
+    if (a === 'ibh' && isHost) { hapusIB(id); return; }
+    if (a === 'ibp') { hapusBayarIB(id); return; }
     if (a === 'xj') { unduhCadangan(); return; }
     if (a === 'xc') { unduhRekap(); return; }
     if (a === 'sl' && isHost) { salinDataLama(b); return; }
@@ -1180,12 +1197,13 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       var nim = $('#ei').value.trim();
       if (!nama) { $('#emsg').textContent = 'Nama tidak boleh kosong.'; return; }
       if (nimDipakai(nim, id)) { $('#emsg').textContent = 'NIM itu sudah dipakai anggota lain.'; return; }
-      memEd = null;
+      memEd = null; edBuka = '';
       simpan(function (bt) { bt.update(db.doc('members/' + id), { nama: nama, nim: nim }); },
         'Ubah anggota', m.nama + ' (NIM ' + (m.nim || '-') + ') menjadi ' + nama + ' (NIM ' + (nim || '-') + ')');
     }
 
     if (a === 'tg') {
+      edBuka = '';
       var aktifkan = (m.aktif === false);
       simpan(function (bt) { bt.update(db.doc('members/' + id), aktifkan ? { aktif: true, selesai: null } : { aktif: false, selesai: cur() }); },
         'Status anggota', m.nama + (aktifkan ? ' diaktifkan' : ' dinonaktifkan'));
@@ -1600,9 +1618,377 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   }
 
   /* =========================================================
+   * Fitur room & Iuran bersama
+   * ========================================================= */
+  var NAMA_IB = 'Iuran bersama';
+  var PENSIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
+
+  /** Fitur yang aktif di room ini (cfg/fitur). Tanpa data: hanya Kas, seperti room lama. */
+  function fitur() {
+    var f = FITUR || {}, k = f.kas !== false, i = f.iuran === true;
+    if (!k && !i) k = true;
+    return { kas: k, iuran: i };
+  }
+  /** Tampilan yang sedang dipakai: otomatis bila satu fitur; bila dua-duanya aktif, pilihan perangkat ini. */
+  function mode() {
+    var f = fitur();
+    if (f.kas && f.iuran) return lsGet('kk-mode-' + KODE) === 'iuran' ? 'iuran' : 'kas';
+    return f.iuran ? 'iuran' : 'kas';
+  }
+  function renderMode() {
+    var el = $('#modebar'), f = fitur();
+    if (!f.kas || !f.iuran || tab === 'set' || !KODE) { el.hidden = true; el.innerHTML = ''; return; }
+    var m = mode();
+    el.hidden = false;
+    el.innerHTML = '<button type="button" data-md="kas" aria-pressed="' + (m === 'kas') + '">Kas</button>' +
+      '<button type="button" data-md="iuran" aria-pressed="' + (m === 'iuran') + '">' + NAMA_IB + '</button>';
+  }
+  function gambarAnggota() { if (mode() === 'iuran') fAnggotaI(); else fAnggota(); }
+  function gambarLaporan() { if (mode() === 'iuran') fLaporanI(); else fLaporan(); }
+  function siapIB() { return IBMUAT.iur && IBMUAT.ipay; }
+  function tglID(s) {
+    var d = new Date(s + 'T00:00:00');
+    return isNaN(d) ? s : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  /** Blok ubah anggota: tersembunyi di balik tombol pensil di pojok kanan bawah rincian. */
+  function blokEdit(m, ada, extra) {
+    var buka = edBuka === m.id, mn = memEd && memEd.id === m.id ? memEd : { nama: m.nama, nim: m.nim }, h = '';
+    if (buka) {
+      h += '<div class="row">' +
+             '<input id="en" value="' + esc(mn.nama) + '">' +
+             '<input id="ei" value="' + esc(mn.nim) + '" inputmode="numeric">' +
+             '<button class="btn sm2" data-a="sv" data-id="' + m.id + '">Simpan</button>' +
+           '</div><p id="emsg" class="err"></p>' +
+           '<div class="row">' +
+             '<button class="btn ghost sm2" data-a="tg" data-id="' + m.id + '">' +
+               (m.aktif === false ? 'Aktifkan lagi' : 'Nonaktifkan') + '</button>' +
+             (ada
+               ? ''
+               : '<button class="btn ghost sm2 del" data-a="dm" data-id="' + m.id + '">' +
+                   (armed === 'dm' + m.id ? 'Yakin hapus?' : 'Hapus anggota') + '</button>') +
+           '</div>' + (extra || '');
+    }
+    return h + '<div class="pen"><button type="button" class="btn ghost sm2" data-a="pen" data-id="' + m.id + '" aria-pressed="' + buka +
+      '" aria-label="Ubah anggota" title="Ubah anggota">' + PENSIL + '</button></div>';
+  }
+
+  /** Hitungan satu iuran: peserta = anggota aktif (plus yang sudah membayar), terkumpul, lunas. */
+  function ringI(i) {
+    var pay = IP.filter(function (x) { return x.iid === i.id; }), byM = {}, ids = {};
+    pay.forEach(function (p) { byM[p.mid] = (byM[p.mid] || 0) + p.jumlah; ids[p.mid] = 1; });
+    M.forEach(function (m) { if (isAktif(m)) ids[m.id] = 1; });
+    var rows = Object.keys(ids).map(function (id) {
+      var m = M.find(function (x) { return x.id === id; });
+      if (!m) return null;
+      var c = byM[id] || 0;
+      return { m: m, c: c, st: i.per > 0 ? (c >= i.per ? 'lunas' : (c > 0 ? 'kurang' : 'belum')) : (c > 0 ? 'lunas' : 'belum') };
+    }).filter(Boolean).sort(function (a, b) { return byNama(a.m, b.m); });
+    return {
+      rows: rows, pay: pay, n: rows.length,
+      terkumpul: sum(pay, jml),
+      target: i.per > 0 ? i.per * rows.length : 0,
+      lunas: rows.filter(function (r) { return r.st === 'lunas'; }).length
+    };
+  }
+  function iurUrut() { return IUR.slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); }); }
+  function bantuDev() {
+    return !isDev ? '' : (!canEdit
+      ? '<div class="alert">Mode bantuan: hanya lihat. <button class="btn sm2" type="button" data-a="dve">Aktifkan edit</button></div>'
+      : (devEdit ? '<div class="alert red">Mode edit Dev aktif. Semua perubahan tercatat [Dev]. <button class="btn ghost sm2" type="button" data-a="dve">Kembali ke lihat saja</button></div>' : ''));
+  }
+
+  /** Kerangka tab untuk tampilan Iuran bersama. */
+  function showI() {
+    var v = $('#view');
+    if (!siapIB()) { v.innerHTML = '<p class="sm">Memuat…</p>'; return; }
+    if (tab === 'home') v.innerHTML = '<div id="sum" class="wrap"></div>';
+    if (tab === 'anggota') {
+      v.innerHTML =
+        '<div class="wrap"><div class="card">' +
+          '<div class="row"><input id="q" placeholder="Cari nama atau NIM" value="' + esc(q) + '">' +
+          '<select id="so" aria-label="Urutkan"><option value="nama">Urut nama</option><option value="nim">Urut NIM</option></select></div>' +
+          '<p class="sm" id="cnt"></p><div id="list"></div></div>' +
+          (canEdit ? '<button class="btn ghost" data-a="kel">Tambah atau impor anggota</button>' : '') + '</div>';
+      $('#so').value = sortBy === 'nim' ? 'nim' : 'nama';
+      $('#q').oninput = function () { q = this.value; fAnggotaI(); };
+      $('#so').onchange = function () { sortBy = this.value; try { localStorage.setItem('kk-urut', sortBy); } catch (e) {} fAnggotaI(); };
+    }
+    if (tab === 'catat') {
+      v.innerHTML =
+        '<div class="wrap">' +
+          '<form id="fq" class="card"><h2>Catat pembayaran</h2>' +
+            '<select id="qi" required aria-label="Pilih iuran"></select>' +
+            '<select id="qm" required aria-label="Pilih anggota"></select>' +
+            '<div class="row"><input id="qt" type="date" required><input id="qj" inputmode="numeric" placeholder="Jumlah (Rp)" required></div>' +
+            '<button class="btn">Simpan pembayaran</button><p id="qmsg" class="sm"></p></form>' +
+          '<form id="fr2" class="card"><h2>Tambah iuran</h2>' +
+            '<input id="inm" placeholder="Nama iuran, misalnya Wisuda" maxlength="60" required>' +
+            '<div class="row"><input id="ipr2" inputmode="numeric" placeholder="Nominal per anggota (kosong = bebas)"><input id="itg" type="date" aria-label="Tenggat"></div>' +
+            '<p class="sm">Nominal kosong berarti bebas: anggota membayar berapa pun. Tenggat boleh dikosongkan.</p>' +
+            '<button class="btn">Buat iuran</button><p id="imsg2" class="sm"></p></form>' +
+          '<div class="card"><h2>Pembayaran terakhir</h2><div id="hist"></div></div>' +
+        '</div>';
+      $('#qt').value = today();
+      maskRupiah($('#qj')); maskRupiah($('#ipr2'));
+      $('#fq').onsubmit = catatIB;
+      $('#fr2').onsubmit = buatIB;
+    }
+    if (tab === 'laporan') v.innerHTML = '<div id="rep" class="wrap"></div>';
+    fillI();
+  }
+
+  function fillI() {
+    if (!siap() || !siapIB()) return;
+    var perlu = { home: '#sum', anggota: '#list', catat: '#fq', laporan: '#rep' }[tab];
+    if (!$(perlu)) { showI(); return; }
+    derive();
+    keepEd();
+    ({ home: fHomeI, anggota: fAnggotaI, catat: fCatatI, laporan: fLaporanI })[tab]();
+  }
+
+  /* ---- Beranda ---- */
+  function kartuIB(i) {
+    var r = ringI(i), pct = r.target ? Math.min(100, Math.round(r.terkumpul / r.target * 100)) : 0;
+    var lewat = i.tenggat && i.tenggat < today() && !i.tutup && (i.per > 0 ? r.lunas < r.n : false);
+    return '<button type="button" class="card ibk" data-a="ibo" data-id="' + i.id + '">' +
+      '<span class="ibt"><b>' + esc(i.nama) + '</b>' +
+        (i.tutup ? '<span class="chip off">ditutup</span>' : (lewat ? '<span class="chip belum">lewat tenggat</span>' : '')) + '</span>' +
+      '<span class="sm">' + (i.per > 0
+        ? rp(r.terkumpul) + ' dari ' + rp(r.target) + ' &middot; ' + r.lunas + ' dari ' + r.n + ' lunas (' + rp(i.per) + ' per anggota)'
+        : rp(r.terkumpul) + ' terkumpul &middot; ' + r.lunas + ' dari ' + r.n + ' sudah bayar (nominal bebas)') + '</span>' +
+      (i.per > 0 ? '<span class="track"><i style="width:' + pct + '%"></i></span>' : '') +
+      (i.tenggat ? '<span class="sm">Tenggat ' + esc(tglID(i.tenggat)) + '</span>' : '') +
+    '</button>';
+  }
+
+  function fHomeI() {
+    if (iSel && IUR.some(function (x) { return x.id === iSel; })) { fRincianI(); return; }
+    iSel = '';
+    var buka = iurUrut().filter(function (i) { return !i.tutup; }), tutup = iurUrut().filter(function (i) { return i.tutup; });
+    $('#sum').innerHTML = bantuDev() +
+      '<div class="card"><span class="lab">Terkumpul di ' + NAMA_IB.toLowerCase() + '</span>' +
+        '<span class="big mono">' + rp(sum(IP, jml)) + '</span>' +
+        '<p class="sm">' + buka.length + ' iuran berjalan' + (tutup.length ? ' &middot; ' + tutup.length + ' ditutup' : '') + '</p></div>' +
+      (buka.map(kartuIB).join('') ||
+        '<div class="card"><p class="sm">Belum ada iuran berjalan.' + (canEdit ? ' Buat di tab Catat.' : '') + '</p></div>') +
+      (tutup.length ? '<h2 style="margin-top:6px">Iuran ditutup</h2>' + tutup.map(kartuIB).join('') : '') +
+      kartuBayar();
+  }
+
+  function fRincianI() {
+    var i = IUR.filter(function (x) { return x.id === iSel; })[0], r = ringI(i);
+    var pct = r.target ? Math.min(100, Math.round(r.terkumpul / r.target * 100)) : 0, urutSt = { belum: 0, kurang: 1, lunas: 2 };
+    var peserta = r.rows.slice().sort(function (a, b) { return urutSt[a.st] - urutSt[b.st] || byNama(a.m, b.m); }).map(function (x) {
+      return '<div class="pv"><span><b>' + esc(x.m.nama) + '</b>' + (x.m.nim ? ' <small class="sm">' + esc(x.m.nim) + '</small>' : '') + '</span>' +
+        '<span class="chip ' + x.st + '">' + (i.per > 0 ? x.st : (x.st === 'lunas' ? 'sudah bayar' : 'belum')) + '</span>' +
+        '<span class="mono" style="text-align:right">' + rp(x.c) + (i.per > 0 && x.c < i.per ? '<br><small class="sm">kurang ' + rp(i.per - x.c) + '</small>' : '') + '</span></div>';
+    }).join('');
+    var bayar = r.pay.slice().sort(terbaru).slice(0, 30).map(function (p) {
+      var m = M.filter(function (z) { return z.id === p.mid; })[0] || { nama: '?' };
+      return '<div class="pv hv"><span>' + esc(p.tgl) + '</span><span>' + esc(m.nama) + '</span><span class="mono in">' + rp(p.jumlah) + '</span>' +
+        (canEdit ? '<span class="acts"><button class="btn ghost sm2 del" data-a="ibp" data-id="' + p.id + '">' + (armed === 'ibp' + p.id ? 'Yakin?' : 'Hapus') + '</button></span>' : '') + '</div>';
+    }).join('');
+    $('#sum').innerHTML = bantuDev() +
+      '<button class="lnk" type="button" data-a="ibk" style="align-self:flex-start">&larr; Semua iuran</button>' +
+      '<div class="card"><h2>' + esc(i.nama) + (i.tutup ? ' <span class="chip off">ditutup</span>' : '') + '</h2>' +
+        '<span class="big mono">' + rp(r.terkumpul) + '</span>' +
+        '<p class="sm">' + (i.per > 0
+          ? 'dari target ' + rp(r.target) + ' (' + rp(i.per) + ' &times; ' + r.n + ' anggota) &middot; ' + r.lunas + ' lunas'
+          : r.lunas + ' dari ' + r.n + ' anggota sudah bayar &middot; nominal bebas') +
+          (i.tenggat ? ' &middot; tenggat ' + esc(tglID(i.tenggat)) : '') + '</p>' +
+        (i.per > 0 ? '<div class="track"><i style="width:' + pct + '%"></i></div>' : '') +
+        (canEdit
+          ? '<div class="row">' +
+              (i.tutup ? '' : '<button class="btn" type="button" data-a="ibc">Catat pembayaran</button>') +
+              '<button class="btn ghost" type="button" data-a="ibt" data-id="' + i.id + '">' + (i.tutup ? 'Buka kembali' : 'Tutup iuran') + '</button>' +
+              (isHost ? '<button class="btn ghost del" type="button" data-a="ibh" data-id="' + i.id + '">' + (armed === 'ibh' + i.id ? 'Yakin hapus?' : 'Hapus iuran') + '</button>' : '') +
+            '</div>'
+          : '') +
+      '</div>' +
+      '<div class="card"><h2>Peserta</h2>' + (peserta || '<p class="sm">Belum ada anggota.</p>') + '</div>' +
+      '<div class="card"><h2>Pembayaran</h2>' + (bayar || '<p class="sm">Belum ada pembayaran.</p>') + '</div>';
+  }
+
+  /* ---- Anggota ---- */
+  function statusAnggotaI(m) {
+    var buka = IUR.filter(function (i) { return !i.tutup; }), lunas = 0;
+    buka.forEach(function (i) {
+      var c = sum(IP.filter(function (x) { return x.iid === i.id && x.mid === m.id; }), jml);
+      if (i.per > 0 ? c >= i.per : c > 0) lunas++;
+    });
+    return { n: buka.length, lunas: lunas };
+  }
+  function fAnggotaI() {
+    var f = q.toLowerCase();
+    var L = M.filter(function (m) {
+      return !f || m.nama.toLowerCase().indexOf(f) > -1 || String(m.nim || '').indexOf(f) > -1;
+    }).sort(function (a, b) {
+      if (sortBy === 'nim') return String(a.nim || '').localeCompare(String(b.nim || ''), 'id', { numeric: true }) || byNama(a, b);
+      return byNama(a, b);
+    });
+    $('#cnt').textContent = L.length === M.length ? M.length + ' anggota' : L.length + ' dari ' + M.length + ' anggota';
+    $('#list').innerHTML = L.map(function (m) {
+      var s = statusAnggotaI(m);
+      var chip = m.aktif === false ? '<span class="chip off">nonaktif</span>'
+        : (s.n ? '<span class="chip ' + (s.lunas === s.n ? 'lunas' : (s.lunas ? 'kurang' : 'belum')) + '">' + s.lunas + '/' + s.n + ' lunas</span>'
+               : '<span class="chip off">belum ada iuran</span>');
+      var row = '<div class="m" data-s="' + m.id + '"><div><b>' + esc(m.nama) + '</b><small>' + esc(m.nim || 'tanpa NIM') + '</small></div>' +
+        '<div style="text-align:right">' + chip + '</div></div>';
+      return sel === m.id ? row + detailI(m) : row;
+    }).join('') || '<p class="sm">' + (M.length ? 'Tidak ada yang cocok.' : 'Belum ada anggota.' + (canEdit ? ' Ketuk Tambah atau impor anggota di bawah.' : '')) + '</p>';
+  }
+  function detailI(m) {
+    var tabel = IUR.length
+      ? '<table><tr><th>Iuran</th><th>Tagihan</th><th>Terbayar</th></tr>' + iurUrut().map(function (i) {
+          var c = sum(IP.filter(function (x) { return x.iid === i.id && x.mid === m.id; }), jml), oke = i.per > 0 ? c >= i.per : c > 0;
+          return '<tr><td>' + esc(i.nama) + (i.tutup ? ' <small class="sm">(ditutup)</small>' : '') + '</td><td class="mono">' + (i.per > 0 ? rp(i.per) : 'bebas') + '</td>' +
+                 '<td class="mono ' + (oke ? 'in' : 'out') + '">' + rp(c) + '</td></tr>';
+        }).join('') + '</table>'
+      : '<p class="sm">Belum ada iuran.</p>';
+    var h = '<div class="det">' + tabel;
+    if (canEdit) h += blokEdit(m, P.some(function (p) { return p.mid === m.id; }) || IP.some(function (p) { return p.mid === m.id; }));
+    return h + '</div>';
+  }
+
+  /* ---- Catat ---- */
+  function fCatatI() {
+    var si = $('#qi'), sm = $('#qm'), vi = si.value || qPre, vm = sm.value;
+    qPre = '';
+    var terbuka = iurUrut().filter(function (i) { return !i.tutup; });
+    si.innerHTML = '<option value="">Pilih iuran</option>' + terbuka.map(function (i) {
+      return '<option value="' + i.id + '" data-lbl="' + esc(i.nama) + '" data-sub="' + (i.per > 0 ? rp(i.per) + ' per anggota' : 'nominal bebas') + '">' + esc(i.nama) + '</option>';
+    }).join('');
+    si.value = vi;
+    if (si.value !== vi) si.value = '';
+    var aktif = M.filter(isAktif).sort(byNama);
+    sm.innerHTML = '<option value="">Pilih anggota</option>' + aktif.map(function (m) {
+      return '<option value="' + m.id + '" data-lbl="' + esc(m.nama) + '" data-sub="NIM ' + esc(m.nim) + '">' + esc(m.nama) + ' (' + esc(m.nim) + ')</option>';
+    }).join('');
+    sm.value = vm;
+    si.onchange = sm.onchange = isiSisaIB;
+
+    var H = IP.slice().sort(terbaru).slice(0, histN);
+    $('#hist').innerHTML = (H.map(function (p) {
+      var m = M.filter(function (z) { return z.id === p.mid; })[0] || { nama: '?' };
+      var i = IUR.filter(function (z) { return z.id === p.iid; })[0] || { nama: '?' };
+      return '<div class="pv hv"><span>' + esc(p.tgl) + '</span><span>' + esc(m.nama) + ' &middot; ' + esc(i.nama) + '</span>' +
+        '<span class="mono in">+' + rp(p.jumlah) + '</span>' +
+        '<span class="acts"><button class="btn ghost sm2 del" data-a="ibp" data-id="' + p.id + '">' + (armed === 'ibp' + p.id ? 'Yakin?' : 'Hapus') + '</button></span></div>';
+    }).join('') || '<p class="sm">Belum ada pembayaran.</p>') +
+      (IP.length > histN ? '<button class="btn ghost" type="button" data-a="more" style="margin-top:8px">Tampilkan lebih banyak</button>' : '');
+  }
+  /** Isi otomatis jumlah dengan sisa yang belum dibayar (bila iuran bernominal tetap). */
+  function isiSisaIB() {
+    var i = IUR.filter(function (x) { return x.id === $('#qi').value; })[0], m = $('#qm').value;
+    if (!i || !m || !(i.per > 0)) return;
+    var c = sum(IP.filter(function (x) { return x.iid === i.id && x.mid === m; }), jml);
+    $('#qj').value = c < i.per ? Number(i.per - c).toLocaleString('id-ID') : '';
+  }
+
+  function buatIB(e) {
+    e.preventDefault();
+    var nama = $('#inm').value.trim().replace(/\s+/g, ' '), per = num($('#ipr2').value), tg = $('#itg').value, msg = $('#imsg2');
+    if (!nama) { msg.className = 'err'; msg.textContent = 'Isi nama iuran.'; return; }
+    if (IUR.some(function (i) { return i.nama.toLowerCase() === nama.toLowerCase(); })) { msg.className = 'err'; msg.textContent = 'Sudah ada iuran dengan nama itu.'; return; }
+    var d = { nama: nama, per: per, tutup: false, ts: Date.now() };
+    if (tg) d.tenggat = tg;
+    msg.className = 'sm'; msg.textContent = 'Menyimpan…';
+    $('#inm').value = $('#ipr2').value = $('#itg').value = '';
+    simpan(function (b) { b.set(db.collection('iur').doc(), d); }, 'Buat iuran',
+      nama + (per > 0 ? ' ' + rp(per) + ' per anggota' : ' (nominal bebas)') + (tg ? ', tenggat ' + tg : '')).then(function (ok) {
+      msg.className = ok ? 'ok' : 'err';
+      msg.textContent = ok ? 'Iuran ' + nama + ' dibuat.' : 'Gagal menyimpan. Isi lagi dan coba ulang.';
+    });
+  }
+
+  function catatIB(e) {
+    e.preventDefault();
+    var iid = $('#qi').value, mid = $('#qm').value, j = num($('#qj').value), t = $('#qt').value, msg = $('#qmsg');
+    var i = IUR.filter(function (x) { return x.id === iid; })[0], m = M.filter(function (x) { return x.id === mid; })[0];
+    if (!i || !m || !j || !t) { msg.className = 'err'; msg.textContent = 'Lengkapi iuran, anggota, tanggal, dan jumlah.'; return; }
+    var k = 'q|' + iid + '|' + mid + '|' + t + '|' + j;
+    if (dup !== k && IP.some(function (p) { return p.iid === iid && p.mid === mid && p.tgl === t && p.jumlah === j; })) {
+      dup = k; msg.className = 'err';
+      msg.textContent = 'Sudah ada pembayaran ' + m.nama + ' ' + rp(j) + ' tgl ' + t + ' untuk ' + i.nama + '. Ketuk Simpan lagi bila memang benar dua kali.';
+      return;
+    }
+    dup = '';
+    var c = sum(IP.filter(function (x) { return x.iid === iid && x.mid === mid; }), jml);
+    var pesan = 'Tersimpan: ' + m.nama + ' ' + rp(j) + ' untuk ' + i.nama + '.' + (i.per > 0 && c + j > i.per ? ' Melebihi nominal ' + rp(i.per) + ' sebesar ' + rp(c + j - i.per) + '.' : '');
+    msg.className = 'sm'; msg.textContent = 'Menyimpan…';
+    $('#qj').value = ''; $('#qm').value = '';
+    simpan(function (b) { b.set(db.collection('ipay').doc(), { iid: iid, mid: mid, tgl: t, jumlah: j, ts: Date.now() }); },
+      'Catat bayar iuran', m.nama + ' · ' + i.nama + ' ' + rp(j) + ' tgl ' + t).then(function (ok) {
+      msg.className = ok ? 'ok' : 'err';
+      msg.textContent = ok ? pesan : 'Gagal menyimpan. Isi lagi dan coba ulang.';
+    });
+  }
+
+  function hapusBayarIB(id) {
+    if (!arm('ibp' + id)) return;
+    var p = IP.filter(function (x) { return x.id === id; })[0];
+    if (!p) return;
+    var m = M.filter(function (x) { return x.id === p.mid; })[0] || {}, i = IUR.filter(function (x) { return x.id === p.iid; })[0] || {};
+    simpan(function (b) { b.delete(db.doc('ipay/' + id)); }, 'Hapus bayar iuran', (m.nama || '?') + ' · ' + (i.nama || '?') + ' ' + rp(p.jumlah) + ' tgl ' + p.tgl);
+  }
+  function tutupIB(id) {
+    var i = IUR.filter(function (x) { return x.id === id; })[0];
+    if (!i) return;
+    simpan(function (b) { b.update(db.doc('iur/' + id), { tutup: !i.tutup }); }, i.tutup ? 'Buka iuran' : 'Tutup iuran', i.nama);
+  }
+  function hapusIB(id) {
+    if (!arm('ibh' + id)) return;
+    var i = IUR.filter(function (x) { return x.id === id; })[0];
+    if (!i) return;
+    var pay = IP.filter(function (x) { return x.iid === id; });
+    if (pay.length > 450) { note('Iuran ini punya terlalu banyak pembayaran untuk dihapus sekaligus. Tutup saja, atau hubungi Dev.', 'red'); return; }
+    iSel = '';
+    simpan(function (b) { b.delete(db.doc('iur/' + id)); pay.forEach(function (p) { b.delete(db.doc('ipay/' + p.id)); }); },
+      'Hapus iuran', i.nama + ' (' + pay.length + ' pembayaran ikut terhapus)');
+  }
+
+  function simpanFitur() {
+    var k = $('#fk').checked, i = $('#fi').checked, msg = $('#fmsg');
+    if (!k && !i) { msg.className = 'err'; msg.textContent = 'Pilih minimal satu fitur.'; return; }
+    msg.className = 'sm'; msg.textContent = 'Menyimpan…';
+    simpan(function (b) { b.set(db.doc('cfg/fitur'), { kas: k, iuran: i, ts: Date.now() }); }, 'Atur fitur',
+      'Aktif: ' + (k && i ? 'Kas dan ' + NAMA_IB : (i ? NAMA_IB : 'Kas'))).then(function (ok) {
+      var el = $('#fmsg');
+      if (el) { el.className = ok ? 'ok' : 'err'; el.textContent = ok ? 'Tersimpan.' : 'Gagal menyimpan.'; }
+    });
+  }
+
+  /* ---- Laporan ---- */
+  function fLaporanI() {
+    var baris = iurUrut().map(function (i) {
+      var r = ringI(i);
+      return '<tr><td>' + esc(i.nama) + (i.tutup ? ' <small class="sm">(ditutup)</small>' : '') + '</td><td class="mono in">' + rp(r.terkumpul) + '</td>' +
+        '<td class="mono">' + (i.per > 0 ? rp(r.target) : '-') + '</td><td class="mono">' + r.lunas + '/' + r.n + '</td></tr>';
+    }).join('');
+    var KAT = [['', 'Semua'], ['keuangan', 'Keuangan'], ['anggota', 'Anggota'], ['pengurus', 'Pengurus'], ['batal', 'Dibatalkan']];
+    var riwayat = LOG.filter(function (l) { return !lf || (l.kat || kategori(l.aksi)) === lf; }).map(function (l) {
+      var waktu = new Date(l.ts).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return '<div class="pv"><span class="sm">' + waktu + '</span><span><b>' + esc(l.aksi) + '</b>: ' + esc(l.ket) + '</span></div>';
+    }).join('');
+    $('#rep').innerHTML =
+      '<div class="card"><h2>Rekap ' + NAMA_IB.toLowerCase() + '</h2><div style="overflow-x:auto"><table>' +
+        '<tr><th>Iuran</th><th>Terkumpul</th><th>Target</th><th>Lunas</th></tr>' +
+        (baris || '<tr><td colspan="4" class="sm">Belum ada iuran.</td></tr>') +
+        (IUR.length ? '<tr><td><b>Total</b></td><td class="mono in"><b>' + rp(sum(IP, jml)) + '</b></td><td></td><td></td></tr>' : '') +
+      '</table></div></div>' +
+      '<div class="card"><h2>Riwayat perubahan</h2>' +
+        '<p class="sm">Jejak 100 perubahan terakhir, termasuk yang dibatalkan.</p>' +
+        '<div class="chips">' + KAT.map(function (k) {
+          return '<button type="button" data-lf="' + k[0] + '" aria-pressed="' + (lf === k[0]) + '">' + k[1] + '</button>';
+        }).join('') + '</div>' +
+        (riwayat || '<p class="sm">Tidak ada catatan di kelompok ini.</p>') + '</div>';
+  }
+
+  /* =========================================================
    * Pengaturan: daftar -> sub-halaman
    * ========================================================= */
-  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Iuran', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Cara bayar' };
+  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Iuran', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Cara bayar', fitur: 'Fitur room' };
   var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik', 'kaca'];
   var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4', kaca: '#0B1020' };
   var UKURAN = ['75', '88', '100', '118'];
@@ -1618,6 +2004,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     semua: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
     bayar: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h14a1 1 0 001-1v-9a1 1 0 00-1-1H5a2 2 0 01-2-2z"/><circle cx="16" cy="14.5" r="1"/></svg>',
     data: '<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>',
+    fitur: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="5"/><circle cx="16" cy="12" r="2.5"/></svg>',
     pengurus: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>'
   };
 
@@ -1654,11 +2041,13 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       var it = [['akun', 'Akun', u0 ? esc(u0.email || 'Sudah masuk') : 'Belum masuk'],
                 ['room', 'Room', KODE ? esc((RNAMA || '') + ' · ' + KODE) : 'Masuk atau buat room']];
       if (isDev) it.push(['semua', 'Semua room', 'Khusus Dev: lihat dan masuk ke room mana pun']);
+      var ff = fitur();
+      if (isHost) it.push(['fitur', 'Fitur room', ff.kas && ff.iuran ? 'Kas dan ' + NAMA_IB : (ff.iuran ? NAMA_IB : 'Kas')]);
       if (isHost) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
       if (isHost) it.push(['bayar', 'Cara bayar', BAYAR && BAYAR.nomor ? esc(BAYAR.dompet) + ' &middot; sudah diatur' : 'Nomor dompet digital untuk iuran']);
       if (canEdit) {
         it.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
-        it.push(['iuran', 'Iuran', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
+        if (ff.kas) it.push(['iuran', 'Iuran', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
         it.push(['data', 'Data', 'Cadangan dan rekap iuran']);
       }
       it.push(['tampilan', 'Tampilan', 'Tema warna dan ukuran teks']);
@@ -1735,6 +2124,13 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             '<input id="pu" placeholder="Kode akun calon bendahara" autocomplete="off">' +
             '<input id="pn" placeholder="Nama panggilan" maxlength="30">' +
             '<button class="btn" type="button" data-a="pad">Tambah</button><p id="pmsg2" class="err"></p></div>';
+    } else if (sub === 'fitur') {
+      var fx = fitur();
+      h = '<div class="card"><h2>Fitur room</h2>' +
+            '<p class="sm">Pilih apa saja yang dipakai room ini. Data fitur yang dimatikan tetap tersimpan dan muncul lagi bila dinyalakan. Minimal satu harus aktif. Bila dua-duanya aktif, semua orang melihat tombol untuk berpindah tampilan. Hanya Host yang bisa mengubahnya.</p>' +
+            '<label class="sm" style="display:flex;gap:10px;align-items:flex-start"><input id="fk" type="checkbox" style="width:auto;min-height:0;margin-top:3px"' + (fx.kas ? ' checked' : '') + '><span><b>Kas</b><br>Iuran rutin per bulan atau minggu, pemasukan lain, dan pengeluaran.</span></label>' +
+            '<label class="sm" style="display:flex;gap:10px;align-items:flex-start"><input id="fi" type="checkbox" style="width:auto;min-height:0;margin-top:3px"' + (fx.iuran ? ' checked' : '') + '><span><b>' + NAMA_IB + '</b><br>Banyak iuran untuk keperluan tertentu (misalnya Wisuda), masing-masing dengan target, tenggat, dan pembayaran sendiri.</span></label>' +
+            '<button class="btn" type="button" data-a="fsim">Simpan</button><p id="fmsg" class="err"></p></div>';
     } else if (sub === 'bayar') {
       var B = BAYAR || {};
       h = '<div class="card"><h2>Cara bayar iuran</h2>' +
@@ -1805,7 +2201,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.2</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.3</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -1818,7 +2214,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   /** Khusus Dev: daftar semua room (aturan Firestore menolak siapa pun selain Dev). */
   var DVLIST = null, dhKode = '', dvBuka = '', dvInfo = {}, dvPulih = null;
   var DOTS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
-  var KOL = ['members', 'pay', 'exp', 'log', 'cfg'];   // 'akses/roles' dibaca/dihapus sebagai dokumen (aturan tidak mengizinkan list)
+  var KOL = ['members', 'pay', 'exp', 'log', 'cfg', 'iur', 'ipay'];   // 'akses/roles' dibaca/dihapus sebagai dokumen (aturan tidak mengizinkan list)
 
   function lalu(ts) {
     if (!ts) return '-';
@@ -1942,7 +2338,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         akses: (one({ n: 'akses', id: 'roles' })[0] || {}).d || null,
         cfg: (one({ n: 'cfg', id: 'main' })[0] || {}).d || null,
         bayar: (one({ n: 'cfg', id: 'bayar' })[0] || {}).d || null,
-        members: o.members, pay: o.pay, exp: o.exp, log: o.log
+        fitur: (one({ n: 'cfg', id: 'fitur' })[0] || {}).d || null,
+        members: o.members, pay: o.pay, exp: o.exp, log: o.log, iur: o.iur, ipay: o.ipay
       };
       unduh('kas-' + kode.toLowerCase() + '-cadangan-' + today() + '.json', JSON.stringify(isi, null, 1), 'application/json');
       audit(kode, o.meta.nama, 'Unduh cadangan', o.members.length + ' anggota, ' + o.pay.length + ' iuran');
@@ -1981,7 +2378,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       if (d.akses) ops.push([root.collection('akses').doc('roles'), d.akses]);
       if (d.cfg) ops.push([root.collection('cfg').doc('main'), d.cfg]);
       if (d.bayar) ops.push([root.collection('cfg').doc('bayar'), d.bayar]);
-      ['members', 'pay', 'exp'].forEach(function (c) { (d[c] || []).forEach(function (x) { ops.push([root.collection(c).doc(x.id), x.d]); }); });
+      if (d.fitur) ops.push([root.collection('cfg').doc('fitur'), d.fitur]);
+      ['members', 'pay', 'exp', 'iur', 'ipay'].forEach(function (c) { (d[c] || []).forEach(function (x) { ops.push([root.collection(c).doc(x.id), x.d]); }); });
       (d.log || []).forEach(function (x) { if (!ada[x.id]) ops.push([root.collection('log').doc(x.id), x.d]); });
       ops.push([fdb.collection('audit').doc(), { ts: Date.now(), kode: kode, nama: d.nama, aksi: 'Pulihkan room', ket: d.members.length + ' anggota' }]);
       var p = Promise.resolve();
@@ -2207,6 +2605,24 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       if (cfgPertama) { cfgPertama = false; tandaiMuat(); } else { fill(); }
     }, function () {
       if (cfgPertama) { cfgPertama = false; tandaiMuat(); }
+    });
+    var fiturPertama = true;
+    db.doc('cfg/fitur').onSnapshot(function (s) {
+      FITUR = s.exists ? s.data() : null;
+      if (fiturPertama) { fiturPertama = false; tandaiMuat(); return; }
+      if (tab === 'set') { if (!sub) fSet(); } else { iSel = ''; show(); }
+    }, function () {
+      if (fiturPertama) { fiturPertama = false; tandaiMuat(); }
+    });
+    ['iur', 'ipay'].forEach(function (c) {
+      var pertama = true, simpanData = function (a) { if (c === 'iur') IUR = a; else IP = a; };
+      db.collection(c).onSnapshot(function (sn) {
+        var ambil = function () { simpanData(sn.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); })); };
+        if (pertama) { pertama = false; ambil(); IBMUAT[c] = true; fill(); return; }
+        if (!sn.docChanges().length) return;
+        ambil();
+        if (mode() === 'iuran' || tab === 'anggota') fill();
+      }, function () { IBMUAT[c] = true; if (mode() === 'iuran') fill(); });   // aturan lama belum mengenal koleksi ini: tampil kosong
     });
     db.doc('cfg/bayar').onSnapshot(function (s) {
       BAYAR = s.exists ? s.data() : null;
