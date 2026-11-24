@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<script>try { var _t = localStorage.getItem('kk-tema'); if (['light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik', 'kaca'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; } catch (e) {}</script>
+<script>try { var _t = localStorage.getItem('kk-tema'), _g = localStorage.getItem('kk-ui'), _UI = ['flat-minimalis', 'material-you', 'glassmorphism', 'liquid-glass', 'aurora-gradient', 'neumorphism', 'skeuomorphism', 'neobrutalism', 'brutalist', 'terminal', 'pixel-art', 'manga', 'y2k-chrome', 'vaporwave', 'bauhaus', 'hand-drawn'], _KU = ['glassmorphism', 'liquid-glass', 'aurora-gradient', 'skeuomorphism', 'neobrutalism', 'brutalist', 'terminal', 'pixel-art', 'manga', 'y2k-chrome', 'vaporwave', 'bauhaus', 'hand-drawn']; if (_UI.indexOf(_g) < 0) _g = _t === 'kaca' ? 'glassmorphism' : 'flat-minimalis'; document.documentElement.setAttribute('data-ui', _g); if (_KU.indexOf(_g) < 0 && ['light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kaskita</title>
 <meta name="description" content="Kaskita: pencatatan kas kelompok">
@@ -17,6 +17,7 @@
 :root {
   color-scheme: light;
   --bg-img: none;
+  --r: 10px; --rf: 8px; --rb: 8px; --rn: 7px; --bw: 1px; --sh: none; --shb: none;
   --bg: #F2F4F1;  --surface: #fff;  --field: #F6F8F5;
   --ink: #16231F; --muted: #5E6B66; --line: #DCE2DD;
   --accent: #1F4E79; --accent-ink: #fff;
@@ -81,18 +82,6 @@
   --line: #DCE3E8; --accent: #1E4E5F; --accent-ink: #FFFFFF; --in: #1A6B50; --in-soft: #E0F1EA;
   --out: #A8402A; --out-soft: #FCEAE6; --warn: #7A5200; --warn-soft: #F7EBC9;
 }
-:root[data-theme="kaca"] {
-  color-scheme: dark;
-  --bg: #070A12; --bg-img: radial-gradient(120% 55% at 85% 105%, #0C2F73 0%, transparent 65%), linear-gradient(180deg, #0B1020 0%, #070A12 100%);
-  --surface: rgba(34, 48, 82, .55); --field: rgba(8, 12, 24, .55); --ink: #E9EEFB; --muted: #A4B1CE;
-  --line: rgba(150, 175, 230, .24); --accent: #6FA8FF; --accent-ink: #06101F; --in: #6FE0A6; --in-soft: rgba(60, 190, 130, .16);
-  --out: #FF9D8E; --out-soft: rgba(255, 110, 90, .16); --warn: #F0D58E; --warn-soft: rgba(240, 213, 142, .15);
-}
-:root[data-theme="kaca"] .card, :root[data-theme="kaca"] nav, :root[data-theme="kaca"] .smenu {
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
-}
-
 /* ===== Dasar ===== */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -131,17 +120,17 @@ header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content:
 /* ===== Navigasi ===== */
 nav {
   display: grid; gap: 4px; padding: 4px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); border: var(--bw) solid var(--line); border-radius: var(--r); box-shadow: var(--sh);
 }
 nav button {
-  height: 36px; border: 0; border-radius: 7px; background: none;
+  height: 36px; border: 0; border-radius: var(--rn); background: none;
   color: var(--muted); font-weight: 600; font-size: .88rem; cursor: pointer;
 }
 nav button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
 
 /* ===== Komponen ===== */
 .card {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); border: var(--bw) solid var(--line); border-radius: var(--r); box-shadow: var(--sh);
   padding: 14px; display: flex; flex-direction: column; gap: 10px;
 }
 .lab { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -155,13 +144,13 @@ nav button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
 .err { color: var(--out); font-size: .88rem; margin: 0; }
 .ok  { color: var(--in);  font-size: .88rem; margin: 0; }
 
-.alert { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 10px 12px; font-size: .9rem; font-weight: 500; }
+.alert { background: var(--warn-soft); color: var(--warn); border-radius: var(--rf); padding: 10px 12px; font-size: .9rem; font-weight: 500; }
 .alert.red { background: var(--out-soft); color: var(--out); }
 .alert.green { background: var(--in-soft); color: var(--in); }
 
 input, select, textarea {
   width: 100%; min-height: 42px; padding: 8px 12px;
-  background: var(--field); border: 1px solid var(--line); border-radius: 8px;
+  background: var(--field); border: 1px solid var(--line); border-radius: var(--rf);
 }
 textarea { min-height: 110px; resize: vertical; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -201,7 +190,7 @@ textarea { min-height: 110px; resize: vertical; }
 .row > * { flex: 1 1 9rem; }
 
 .btn {
-  min-height: 42px; padding: 0 16px; border: 0; border-radius: 8px;
+  min-height: 42px; padding: 0 16px; border: 0; border-radius: var(--rb); box-shadow: var(--shb);
   background: var(--accent); color: var(--accent-ink);
   font-weight: 600; cursor: pointer; flex: 0 0 auto; width: auto;
 }
@@ -228,7 +217,7 @@ textarea { min-height: 110px; resize: vertical; }
 .chip { font-size: .78rem; font-weight: 600; border-radius: 99px; padding: 2px 10px; white-space: nowrap; }
 .lunas  { background: var(--in-soft);   color: var(--in); }
 .kurang { background: var(--warn-soft); color: var(--warn); }
-:root[data-theme="dark"], :root[data-theme="hitam"], :root[data-theme="biru"], :root[data-theme="kaca"] { --muka: #38bdf8; }
+:root[data-theme="dark"], :root[data-theme="hitam"], :root[data-theme="biru"] { --muka: #38bdf8; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme]) { --muka: #38bdf8; } }
 .dm { display: block; font-size: 11px; color: var(--muka); font-weight: 500; white-space: nowrap; }
 .belum  { background: var(--out-soft);  color: var(--out); }
@@ -255,7 +244,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 .hb { display: flex; gap: 6px; align-items: center; }
 .shead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .shead .lnk { align-self: auto; }
-.smenu { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.smenu { display: flex; flex-direction: column; background: var(--surface); border: var(--bw) solid var(--line); border-radius: var(--r); box-shadow: var(--sh); overflow: hidden; }
 .smenu button { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
 .smenu button:last-child { border-bottom: 0; }
 .smenu svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -279,6 +268,228 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 .lgc { width: 100%; max-width: 400px; gap: 12px; padding: 22px; }
 .lgc .btn { width: 100%; }
 .lnk { background: none; border: 0; color: var(--accent); text-decoration: underline; font-size: .88rem; cursor: pointer; align-self: center; padding: 6px; }
+/* ===== Gaya UI (atribut data-ui pada <html>) =====
+   Gaya berpalet bebas (flat-minimalis, material-you, neumorphism) mengikuti "Tema warna".
+   Gaya lain mengunci seluruh palet sendiri supaya kontras angka kas tetap terbaca. */
+:root[data-ui="material-you"] { --r: 24px; --rf: 16px; --rb: 999px; --rn: 999px; --bw: 0px; --sh: 0 1px 3px rgba(0, 0, 0, .14); }
+:root[data-ui="material-you"] .wrap { gap: 18px; }
+:root[data-ui="material-you"] .card { padding: 18px; gap: 14px; background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%); }
+:root[data-ui="material-you"] nav { padding: 6px; gap: 6px; }
+:root[data-ui="material-you"] input, :root[data-ui="material-you"] select, :root[data-ui="material-you"] textarea { border-radius: 16px; padding: 10px 16px; }
+:root[data-ui="material-you"] .btn { padding: 0 22px; }
+:root[data-ui="material-you"] .chips button, :root[data-ui="material-you"] .selbtn { border-radius: 999px; }
+
+:root[data-ui="neumorphism"] {
+  --r: 20px; --rf: 14px; --rb: 14px; --rn: 12px; --bw: 0px;
+  --surface: var(--bg); --field: var(--bg);
+  --nl: rgba(255, 255, 255, .85); --nd: rgba(40, 60, 50, .2);
+  --sh: 7px 7px 15px var(--nd), -7px -7px 15px var(--nl);
+  --shb: 4px 4px 9px var(--nd), -4px -4px 9px var(--nl);
+}
+:root[data-ui="neumorphism"][data-theme="dark"], :root[data-ui="neumorphism"][data-theme="hitam"], :root[data-ui="neumorphism"][data-theme="biru"] { --nl: rgba(255, 255, 255, .07); --nd: rgba(0, 0, 0, .55); }
+@media (prefers-color-scheme: dark) { :root[data-ui="neumorphism"]:not([data-theme]) { --nl: rgba(255, 255, 255, .07); --nd: rgba(0, 0, 0, .55); } }
+:root[data-ui="neumorphism"] .wrap { gap: 20px; }
+:root[data-ui="neumorphism"] input, :root[data-ui="neumorphism"] select, :root[data-ui="neumorphism"] textarea, :root[data-ui="neumorphism"] .selbtn { border: 0; box-shadow: inset 3px 3px 7px var(--nd), inset -3px -3px 7px var(--nl); }
+:root[data-ui="neumorphism"] .btn:active { box-shadow: inset 3px 3px 7px var(--nd), inset -3px -3px 7px var(--nl); }
+:root[data-ui="neumorphism"] .btn.ghost, :root[data-ui="neumorphism"] .chips button, :root[data-ui="neumorphism"] .themes button, :root[data-ui="neumorphism"] .sizes button { border: 0; box-shadow: var(--shb); }
+:root[data-ui="neumorphism"] .chips button[aria-pressed="true"], :root[data-ui="neumorphism"] .themes button[aria-pressed="true"], :root[data-ui="neumorphism"] .sizes button[aria-pressed="true"] { box-shadow: inset 3px 3px 7px var(--nd), inset -3px -3px 7px var(--nl); color: var(--accent); }
+:root[data-ui="neumorphism"] .m, :root[data-ui="neumorphism"] .pv, :root[data-ui="neumorphism"] .grid > div, :root[data-ui="neumorphism"] th, :root[data-ui="neumorphism"] td { border-top-color: color-mix(in srgb, var(--nd) 55%, transparent); }
+
+/* -- Kategori Modern & Atmosferik -- */
+:root[data-ui="glassmorphism"] {
+  color-scheme: dark; --muka: #38bdf8;
+  --bg: #070A12; --bg-img: radial-gradient(120% 55% at 85% 105%, #0C2F73 0%, transparent 65%), linear-gradient(180deg, #0B1020 0%, #070A12 100%);
+  --surface: rgba(34, 48, 82, .55); --field: rgba(8, 12, 24, .55); --ink: #E9EEFB; --muted: #A4B1CE;
+  --line: rgba(190, 210, 255, .28); --accent: #6FA8FF; --accent-ink: #06101F; --in: #6FE0A6; --in-soft: rgba(60, 190, 130, .16);
+  --out: #FF9D8E; --out-soft: rgba(255, 110, 90, .16); --warn: #F0D58E; --warn-soft: rgba(240, 213, 142, .15);
+  --r: 16px; --rf: 12px; --rb: 12px; --rn: 10px;
+  --sh: inset 0 1px 0 rgba(255, 255, 255, .14), 0 6px 20px rgba(0, 0, 0, .25);
+}
+:root[data-ui="glassmorphism"] .card, :root[data-ui="glassmorphism"] nav, :root[data-ui="glassmorphism"] .smenu { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+
+:root[data-ui="liquid-glass"] {
+  color-scheme: dark; --muka: #38bdf8;
+  --bg: #05070D;
+  --bg-img: radial-gradient(circle at 12% 10%, rgba(124, 92, 255, .55), transparent 42%), radial-gradient(circle at 92% 28%, rgba(0, 200, 255, .40), transparent 40%), radial-gradient(circle at 25% 92%, rgba(255, 90, 180, .34), transparent 46%);
+  --surface: rgba(255, 255, 255, .07); --field: rgba(255, 255, 255, .06); --ink: #F4F7FF; --muted: #B8C2DC;
+  --line: rgba(255, 255, 255, .16); --accent: #8FB8FF; --accent-ink: #060B18; --in: #7CF0B2; --in-soft: rgba(80, 220, 150, .16);
+  --out: #FF9FA0; --out-soft: rgba(255, 110, 110, .16); --warn: #FFE29A; --warn-soft: rgba(255, 226, 154, .15);
+  --r: 22px; --rf: 14px; --rb: 14px; --rn: 12px;
+  --sh: inset 1px 1px 0 rgba(255, 255, 255, .38), inset 0 0 22px rgba(255, 255, 255, .04), 0 10px 28px rgba(0, 0, 0, .38);
+}
+:root[data-ui="liquid-glass"] .card, :root[data-ui="liquid-glass"] nav, :root[data-ui="liquid-glass"] .smenu {
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  border-top-color: rgba(255, 255, 255, .5); border-left-color: rgba(255, 255, 255, .42);
+}
+
+:root[data-ui="aurora-gradient"] {
+  color-scheme: dark; --muka: #38bdf8;
+  --bg: #08111F;
+  --bg-img: radial-gradient(60% 38% at 8% 0%, rgba(52, 211, 153, .38), transparent 70%), radial-gradient(55% 40% at 96% 14%, rgba(99, 102, 241, .42), transparent 70%), radial-gradient(70% 45% at 50% 100%, rgba(236, 72, 153, .30), transparent 70%);
+  --surface: rgba(12, 20, 36, .84); --field: rgba(6, 12, 24, .7); --ink: #EEF3FB; --muted: #A9B6CC;
+  --line: rgba(255, 255, 255, .13); --accent: #5EEAD4; --accent-ink: #04201C; --in: #5EEAA8; --in-soft: rgba(52, 211, 153, .16);
+  --out: #FFA2A2; --out-soft: rgba(248, 113, 113, .16); --warn: #FDE68A; --warn-soft: rgba(253, 230, 138, .14);
+  --r: 14px; --rf: 10px; --rb: 10px;
+  --sh: 0 6px 22px rgba(0, 0, 0, .3);
+}
+
+:root[data-ui="skeuomorphism"] {
+  --bg: #EADFC6;
+  --bg-img: repeating-linear-gradient(0deg, rgba(120, 90, 40, .045) 0 1px, transparent 1px 3px), linear-gradient(180deg, #EFE5CE, #E6D9BC);
+  --surface: #FBF6E8; --field: #F4ECD6; --ink: #2B2418; --muted: #6A5E44;
+  --line: #B7A683; --accent: #7A4A1C; --accent-ink: #FFF8E8; --in: #2C6B38; --in-soft: #DDEBD3;
+  --out: #A12B1E; --out-soft: #F3DAD3; --warn: #7A5200; --warn-soft: #F4E3B0;
+  --r: 6px; --rf: 5px; --rb: 6px; --rn: 5px;
+  --sh: 0 1px 0 #fff inset, 0 2px 0 rgba(90, 65, 20, .12), 0 8px 16px rgba(80, 60, 20, .2);
+  --shb: 0 3px 0 #4A2A0C, 0 5px 8px rgba(60, 35, 10, .35);
+}
+:root[data-ui="skeuomorphism"] .btn:not(.ghost) { background: linear-gradient(180deg, #A06A33, #6E3F16); border: 1px solid #4A2A0C; text-shadow: 0 -1px 0 rgba(0, 0, 0, .35); }
+:root[data-ui="skeuomorphism"] .btn:not(.ghost):active { transform: translateY(2px); box-shadow: 0 1px 0 #4A2A0C; }
+:root[data-ui="skeuomorphism"] .btn.ghost { background: linear-gradient(180deg, #FFFDF5, #EDE2C4); box-shadow: 0 2px 0 #B7A683; }
+:root[data-ui="skeuomorphism"] input, :root[data-ui="skeuomorphism"] select, :root[data-ui="skeuomorphism"] textarea { box-shadow: inset 0 2px 4px rgba(90, 65, 20, .18); }
+:root[data-ui="skeuomorphism"] .m, :root[data-ui="skeuomorphism"] .pv, :root[data-ui="skeuomorphism"] .grid > div, :root[data-ui="skeuomorphism"] th, :root[data-ui="skeuomorphism"] td, :root[data-ui="skeuomorphism"] .kv, :root[data-ui="skeuomorphism"] .ed { border-top-style: dashed; }
+:root[data-ui="skeuomorphism"] .card { background: linear-gradient(180deg, #FFFBEF, #F7F0DC); }
+
+/* -- Kategori Eksperimental & Artistik -- */
+:root[data-ui="neobrutalism"] {
+  --bg: #FFE8A3; --surface: #FFFFFF; --field: #FFF7DC; --ink: #000000; --muted: #333333;
+  --line: #000000; --accent: #4F35E8; --accent-ink: #FFFFFF; --in: #0A6B33; --in-soft: #B8F5C8;
+  --out: #C40000; --out-soft: #FFC9C9; --warn: #6B4300; --warn-soft: #FFD84D;
+  --r: 4px; --rf: 4px; --rb: 4px; --rn: 3px; --bw: 2px;
+  --sh: 4px 4px 0 #000; --shb: 3px 3px 0 #000;
+}
+:root[data-ui="neobrutalism"] input, :root[data-ui="neobrutalism"] select, :root[data-ui="neobrutalism"] textarea, :root[data-ui="neobrutalism"] .selbtn, :root[data-ui="neobrutalism"] .btn.ghost, :root[data-ui="neobrutalism"] .chips button, :root[data-ui="neobrutalism"] .themes button, :root[data-ui="neobrutalism"] .sizes button { border: 2px solid #000; }
+:root[data-ui="neobrutalism"] .btn { border: 2px solid #000; }
+:root[data-ui="neobrutalism"] .btn:active { transform: translate(3px, 3px); box-shadow: none; }
+:root[data-ui="neobrutalism"] nav button[aria-pressed=true] { background: #4F35E8; color: #fff; }
+:root[data-ui="neobrutalism"] .chip { border: 2px solid #000; }
+
+:root[data-ui="brutalist"] {
+  --bg: #FFFFFF; --surface: #FFFFFF; --field: #F0F0F0; --ink: #000000; --muted: #2B2B2B;
+  --line: #000000; --accent: #000000; --accent-ink: #FFFFFF; --in: #006B1E; --in-soft: #E4E4E4;
+  --out: #B00000; --out-soft: #E4E4E4; --warn: #5A3A00; --warn-soft: #E4E4E4;
+  --r: 0px; --rf: 0px; --rb: 0px; --rn: 0px; --bw: 2px; --sh: none; --shb: none;
+}
+:root[data-ui="brutalist"] * { border-radius: 0 !important; }
+:root[data-ui="brutalist"] input, :root[data-ui="brutalist"] select, :root[data-ui="brutalist"] textarea, :root[data-ui="brutalist"] .selbtn, :root[data-ui="brutalist"] .btn.ghost, :root[data-ui="brutalist"] .chips button, :root[data-ui="brutalist"] .themes button, :root[data-ui="brutalist"] .sizes button, :root[data-ui="brutalist"] .chip { border: 2px solid #000; }
+:root[data-ui="brutalist"] h1, :root[data-ui="brutalist"] h2 { text-transform: uppercase; letter-spacing: .02em; }
+
+:root[data-ui="terminal"] {
+  color-scheme: dark; --muka: #38bdf8;
+  --bg: #0A0A0A; --surface: #0D120D; --field: #080A08; --ink: #22C55E; --muted: #5BB77B;
+  --line: #1E7B3F; --accent: #22C55E; --accent-ink: #0A0A0A; --in: #4ADE80; --in-soft: rgba(34, 197, 94, .14);
+  --out: #FF6B6B; --out-soft: rgba(255, 107, 107, .14); --warn: #FACC15; --warn-soft: rgba(250, 204, 21, .13);
+  --fd: "IBM Plex Mono", ui-monospace, "Courier New", monospace; --fb: "IBM Plex Mono", ui-monospace, "Courier New", monospace; --fm: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
+  --r: 2px; --rf: 2px; --rb: 2px; --rn: 2px; --sh: none;
+}
+:root[data-ui="terminal"] .card, :root[data-ui="terminal"] nav, :root[data-ui="terminal"] .smenu { border-style: dashed; border-color: #22C55E; }
+:root[data-ui="terminal"] .big, :root[data-ui="terminal"] h1 { text-shadow: 0 0 8px rgba(34, 197, 94, .45); }
+:root[data-ui="terminal"] h2::before { content: "> "; }
+:root[data-ui="terminal"] nav button[aria-pressed=true] { background: #22C55E; color: #0A0A0A; }
+
+:root[data-ui="pixel-art"] {
+  color-scheme: dark; --muka: #38bdf8;
+  --bg: #0F0F2D; --surface: #1E1E4A; --field: #151538; --ink: #F8F8F8; --muted: #BDBDF0;
+  --line: #8E8EFF; --accent: #FFD93D; --accent-ink: #1A1A1A; --in: #5CFF9D; --in-soft: rgba(92, 255, 157, .14);
+  --out: #FF7B8F; --out-soft: rgba(255, 123, 143, .16); --warn: #FFD93D; --warn-soft: rgba(255, 217, 61, .14);
+  --fd: "Courier New", ui-monospace, monospace; --fb: "Courier New", ui-monospace, monospace; --fm: "Courier New", ui-monospace, monospace;
+  --r: 0px; --rf: 0px; --rb: 0px; --rn: 0px; --bw: 3px;
+  --sh: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, .45); --shb: 3px 3px 0 #000, 6px 6px 0 rgba(0, 0, 0, .4);
+}
+:root[data-ui="pixel-art"] * { border-radius: 0 !important; }
+:root[data-ui="pixel-art"] body { font-weight: 600; }
+:root[data-ui="pixel-art"] h1, :root[data-ui="pixel-art"] h2, :root[data-ui="pixel-art"] .big { font-weight: 800; letter-spacing: .02em; }
+:root[data-ui="pixel-art"] input, :root[data-ui="pixel-art"] select, :root[data-ui="pixel-art"] textarea, :root[data-ui="pixel-art"] .selbtn, :root[data-ui="pixel-art"] .btn.ghost, :root[data-ui="pixel-art"] .chips button, :root[data-ui="pixel-art"] .themes button, :root[data-ui="pixel-art"] .sizes button { border: 3px solid #8E8EFF; }
+:root[data-ui="pixel-art"] .btn:active { transform: translate(3px, 3px); box-shadow: none; }
+
+:root[data-ui="manga"] {
+  --bg: #FFFFFF; --bg-img: repeating-linear-gradient(135deg, rgba(0, 0, 0, .07) 0 1px, transparent 1px 7px);
+  --surface: #FFFFFF; --field: #F2F2F2; --ink: #000000; --muted: #2F2F2F;
+  --line: #000000; --accent: #000000; --accent-ink: #FFFFFF; --in: #1A5E2C; --in-soft: #E6E6E6;
+  --out: #B10F1B; --out-soft: #E6E6E6; --warn: #5A3A00; --warn-soft: #E6E6E6;
+  --r: 2px; --rf: 2px; --rb: 2px; --rn: 2px; --bw: 3px; --sh: 3px 3px 0 #000; --shb: none;
+}
+:root[data-ui="manga"] nav { background: repeating-linear-gradient(45deg, rgba(0, 0, 0, .13) 0 1px, #fff 1px 5px); }
+:root[data-ui="manga"] nav button { background: #fff; border: 2px solid #000; }
+:root[data-ui="manga"] nav button[aria-pressed=true] { background: #000; color: #fff; }
+:root[data-ui="manga"] header { border-bottom: 3px solid #000; padding-bottom: 6px; background: repeating-linear-gradient(45deg, rgba(0, 0, 0, .1) 0 1px, transparent 1px 6px); }
+:root[data-ui="manga"] input, :root[data-ui="manga"] select, :root[data-ui="manga"] textarea, :root[data-ui="manga"] .selbtn, :root[data-ui="manga"] .btn.ghost, :root[data-ui="manga"] .chips button, :root[data-ui="manga"] .themes button, :root[data-ui="manga"] .sizes button { border: 2px solid #000; }
+:root[data-ui="manga"] h1, :root[data-ui="manga"] h2 { font-weight: 800; }
+
+:root[data-ui="y2k-chrome"] {
+  --bg: #DDE2EA; --bg-img: linear-gradient(135deg, #E9EDF3 0%, #FFFFFF 38%, #C6CCD8 68%, #F3F5F9 100%);
+  --surface: #F1F3F7; --field: #FFFFFF; --ink: #0B1B3A; --muted: #46526A;
+  --line: #8D97A8; --accent: #2563EB; --accent-ink: #FFFFFF; --in: #0A6338; --in-soft: #DAF0E5;
+  --out: #B91C1C; --out-soft: #F8DEDE; --warn: #7A5200; --warn-soft: #F7E8BF;
+  --r: 14px; --rf: 10px; --rb: 999px; --rn: 999px;
+  --sh: inset 0 1px 0 #fff, 0 3px 10px rgba(37, 99, 235, .14);
+  --shb: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 6px rgba(37, 99, 235, .35);
+}
+:root[data-ui="y2k-chrome"] .card, :root[data-ui="y2k-chrome"] nav, :root[data-ui="y2k-chrome"] .smenu { background: linear-gradient(180deg, #FFFFFF 0%, #E4E8EF 55%, #F5F7FA 100%); }
+:root[data-ui="y2k-chrome"] .btn:not(.ghost) { background: linear-gradient(180deg, #6C9BFA 0%, #2563EB 52%, #1D4ED8 100%); border: 1px solid #1E40AF; text-shadow: 0 -1px 0 rgba(0, 0, 0, .3); }
+:root[data-ui="y2k-chrome"] .btn.ghost { background: linear-gradient(180deg, #FFFFFF, #DDE2EA); }
+:root[data-ui="y2k-chrome"] nav button[aria-pressed=true] { background: linear-gradient(180deg, #6C9BFA, #2563EB 55%, #1D4ED8); color: #fff; }
+
+:root[data-ui="vaporwave"] {
+  color-scheme: dark; --muka: #22D3EE;
+  --bg: #2A0A4A; --bg-img: radial-gradient(70% 35% at 50% 100%, rgba(34, 211, 238, .28), transparent 70%), linear-gradient(180deg, #2B0B4E 0%, #4A1470 58%, #7A1E8C 100%);
+  --surface: rgba(32, 10, 66, .8); --field: rgba(20, 5, 44, .7); --ink: #FDE9FF; --muted: #D4B6F2;
+  --line: rgba(244, 114, 182, .55); --accent: #F472B6; --accent-ink: #2A0A4A; --in: #22D3EE; --in-soft: rgba(34, 211, 238, .16);
+  --out: #FF9DBB; --out-soft: rgba(255, 120, 170, .18); --warn: #FDE68A; --warn-soft: rgba(253, 230, 138, .15);
+  --r: 8px; --rf: 6px; --rb: 6px; --rn: 6px;
+  --sh: 0 0 14px rgba(244, 114, 182, .35), 0 0 30px rgba(34, 211, 238, .16);
+  --shb: 0 0 12px rgba(244, 114, 182, .55);
+}
+:root[data-ui="vaporwave"] .big, :root[data-ui="vaporwave"] h1 { text-shadow: 0 0 12px rgba(34, 211, 238, .55); }
+
+:root[data-ui="bauhaus"] {
+  --bg: #F4EFE6; --surface: #FFFFFF; --field: #F8F4EC; --ink: #111111; --muted: #4A4A4A;
+  --line: #111111; --accent: #D62828; --accent-ink: #FFFFFF; --in: #1346C4; --in-soft: #D6E2FF;
+  --out: #C81E1E; --out-soft: #FFD9D9; --warn: #6B5200; --warn-soft: #FFE56B;
+  --r: 0px; --rf: 0px; --rb: 0px; --rn: 0px; --bw: 2px; --sh: none;
+}
+:root[data-ui="bauhaus"] * { border-radius: 0 !important; }
+:root[data-ui="bauhaus"] .card { border-left-width: 10px; }
+:root[data-ui="bauhaus"] .wrap > .card:nth-of-type(3n+1) { border-left-color: #D62828; }
+:root[data-ui="bauhaus"] .wrap > .card:nth-of-type(3n+2) { border-left-color: #F2C200; }
+:root[data-ui="bauhaus"] .wrap > .card:nth-of-type(3n) { border-left-color: #1346C4; }
+:root[data-ui="bauhaus"] input, :root[data-ui="bauhaus"] select, :root[data-ui="bauhaus"] textarea, :root[data-ui="bauhaus"] .selbtn, :root[data-ui="bauhaus"] .btn.ghost, :root[data-ui="bauhaus"] .chips button, :root[data-ui="bauhaus"] .themes button, :root[data-ui="bauhaus"] .sizes button { border: 2px solid #111; }
+:root[data-ui="bauhaus"] .chip { border: 2px solid #111; }
+:root[data-ui="bauhaus"] .chip.lunas { background: #1346C4; color: #fff; }
+:root[data-ui="bauhaus"] .chip.kurang { background: #F2C200; color: #111; }
+:root[data-ui="bauhaus"] .chip.belum { background: #D62828; color: #fff; }
+:root[data-ui="bauhaus"] nav button[aria-pressed=true] { background: #111; color: #F2C200; }
+:root[data-ui="bauhaus"] .btn:not(.ghost):nth-of-type(2n) { background: #1346C4; }
+
+:root[data-ui="hand-drawn"] {
+  --bg: #FBF7EC; --bg-img: radial-gradient(rgba(60, 50, 30, .05) 1px, transparent 1.2px); --bg-size: 14px;
+  --surface: #FFFEFA; --field: #FAF5E6; --ink: #2B2B2B; --muted: #5B5648;
+  --line: #2B2B2B; --accent: #2F5FD0; --accent-ink: #FFFFFF; --in: #2A7A33; --in-soft: #E1F1DD;
+  --out: #C0281F; --out-soft: #FBE1DC; --warn: #7A5200; --warn-soft: #F8EBC2;
+  --r: 255px 15px 225px 15px / 15px 225px 15px 255px; --rf: 14px 5px 12px 5px / 5px 12px 5px 14px; --rb: 14px 5px 12px 5px / 5px 12px 5px 14px; --rn: 12px 4px 10px 4px / 4px 10px 4px 12px; --bw: 2px;
+  --fd: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", cursive;
+}
+:root[data-ui="hand-drawn"] body { background-size: 14px 14px; }
+:root[data-ui="hand-drawn"] .card { padding: 18px 20px; }
+:root[data-ui="hand-drawn"] input, :root[data-ui="hand-drawn"] select, :root[data-ui="hand-drawn"] textarea, :root[data-ui="hand-drawn"] .selbtn, :root[data-ui="hand-drawn"] .btn.ghost { border: 2px solid #2B2B2B; }
+
+/* -- Pemilih gaya di Pengaturan > Tampilan -- */
+.uikat { display: flex; flex-direction: column; gap: 8px; }
+.uikat > button {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; padding: 12px 14px;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.uikat > button b { display: block; font: 600 1rem/1.3 var(--fd); }
+.uikat > button small { display: block; color: var(--muted); font-size: .82rem; margin-top: 2px; }
+.uikat > button[aria-expanded="true"] { border-color: var(--accent); }
+.uikat > button svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; transition: transform .15s; }
+.uikat > button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.uigaya { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 2px 0 6px; }
+.uigaya button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-weight: 600; font-size: .85rem; cursor: pointer; text-align: left; }
+.uigaya button[aria-pressed="true"] { border-color: var(--accent); }
+.uigaya .sw { display: block; width: 100%; height: 34px; border-radius: 8px; border: 1px solid rgba(128, 128, 128, .45); }
+.uigaya small { color: var(--muted); font-weight: 400; font-size: .75rem; }
+.themes.kunci { opacity: .4; pointer-events: none; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1165,7 +1376,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     var g = e.target.closest('[data-go]');
     if (g) { sub = g.dataset.go; PV = []; fSet(); window.scrollTo(0, 0); return; }
 
-    var b = e.target.closest('button[data-a], button[data-t], button[data-u], button[data-lf]');
+    var b = e.target.closest('button[data-a], button[data-t], button[data-u], button[data-lf], button[data-kat], button[data-ui]');
 
     if (!b) {
       var r = e.target.closest('[data-s]');
@@ -1183,6 +1394,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     }
     if (a === 'in') { bukaLogin(); return; }
     var th = b.dataset.t, uk = b.dataset.u;
+    if (b.dataset.kat !== undefined) { uiKat = (uiKat === b.dataset.kat) ? '' : b.dataset.kat; fSet(); return; }
+    if (b.dataset.ui) { lsSet('kk-ui', b.dataset.ui); fSet(); return; }
     if (th) { lsSet('kk-tema', th); fSet(); return; }
     if (uk) { lsSet('kk-ukuran', uk); fSet(); return; }
     if (b.dataset.lf !== undefined) { lf = b.dataset.lf; gambarLaporan(); return; }
@@ -2180,8 +2393,8 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
    * Pengaturan: daftar -> sub-halaman
    * ========================================================= */
   var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Nominal kas', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Cara bayar', fitur: 'Fitur room' };
-  var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik', 'kaca'];
-  var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4', kaca: '#0B1020' };
+  var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'];
+  var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4' };
   var UKURAN = ['75', '88', '100', '118'];
   var lsGet = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var lsSet = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -2199,13 +2412,53 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
     pengurus: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>'
   };
 
+  /* ----- Gaya UI: 3 kategori, 16 gaya. Disimpan di perangkat ini (kk-ui), dipasang lewat data-ui pada <html>. ----- */
+  var UI_KAT = [
+    { id: 'fungsional', t: 'Fungsional & Bersih', d: 'Nyaman untuk baca angka & hemat baterai', items: [
+      ['flat-minimalis', 'Flat Minimalis', 'Kartu bersih, garis tipis', 'linear-gradient(90deg,#F2F4F1 55%,#fff 55% 80%,#1F4E79 80%)'],
+      ['material-you', 'Material You', 'Sangat membulat, lega', 'linear-gradient(90deg,#E8EEF6 55%,#D6E3F5 55% 80%,#3B6FD0 80%)'] ] },
+    { id: 'modern', t: 'Modern & Atmosferik', d: 'Efek kaca, cahaya, dan tekstur', items: [
+      ['glassmorphism', 'Glassmorphism', 'Kaca buram semi-transparan', 'linear-gradient(90deg,#0B1020 55%,#22305A 55% 80%,#6FA8FF 80%)'],
+      ['liquid-glass', 'Liquid Glass', 'Bulatan cahaya dan kilau tepi', 'radial-gradient(circle at 20% 30%,#7C5CFF,transparent 55%),radial-gradient(circle at 85% 70%,#00C8FF,transparent 55%),#05070D'],
+      ['aurora-gradient', 'Aurora Gradient', 'Gradasi aurora lembut', 'linear-gradient(120deg,#34D399,#6366F1 55%,#EC4899)'],
+      ['neumorphism', 'Neumorphism', 'Timbul dan tenggelam lembut', 'linear-gradient(135deg,#fff,#E6EAE8)'],
+      ['skeuomorphism', 'Skeuomorphism', 'Seperti buku kas dan struk', 'linear-gradient(90deg,#EADFC6 55%,#FBF6E8 55% 80%,#7A4A1C 80%)'] ] },
+    { id: 'eksperimen', t: 'Eksperimental & Artistik', d: 'Tampilan unik, retro, dan nyentrik', items: [
+      ['neobrutalism', 'Neobrutalism', 'Garis tebal, bayangan kaku', 'linear-gradient(90deg,#FFE8A3 55%,#fff 55% 80%,#4F35E8 80%)'],
+      ['brutalist', 'Brutalist', 'Kotak tajam, hitam putih', 'linear-gradient(90deg,#fff 55%,#000 55% 80%,#fff 80%)'],
+      ['terminal', 'Terminal', 'Layar perintah hijau', 'linear-gradient(90deg,#0A0A0A 55%,#0D120D 55% 80%,#22C55E 80%)'],
+      ['pixel-art', 'Pixel Art', 'Retro 8-bit', 'linear-gradient(90deg,#0F0F2D 55%,#1E1E4A 55% 80%,#FFD93D 80%)'],
+      ['manga', 'Manga', 'Panel komik hitam putih', 'repeating-linear-gradient(135deg,#fff 0 4px,#bbb 4px 5px)'],
+      ['y2k-chrome', 'Y2K Chrome', 'Perak metalik, biru elektrik', 'linear-gradient(135deg,#E9EDF3,#fff 40%,#C6CCD8 70%,#2563EB 70%)'],
+      ['vaporwave', 'Vaporwave', 'Ungu retro, merah muda neon', 'linear-gradient(90deg,#2B0B4E 40%,#F472B6 40% 70%,#22D3EE 70%)'],
+      ['bauhaus', 'Bauhaus', 'Geometris, warna primer', 'linear-gradient(90deg,#D62828 33%,#F2C200 33% 66%,#1346C4 66%)'],
+      ['hand-drawn', 'Hand-drawn', 'Garis sketsa tangan', 'linear-gradient(90deg,#FBF7EC 55%,#FFFEFA 55% 80%,#2F5FD0 80%)'] ] }
+  ];
+  var UI_LIST = [], UI_BEBAS = ['flat-minimalis', 'material-you', 'neumorphism'];
+  UI_KAT.forEach(function (k) { k.items.forEach(function (i) { UI_LIST.push(i[0]); }); });
+  var UI_BAR = { 'glassmorphism': '#0B1020', 'liquid-glass': '#05070D', 'aurora-gradient': '#08111F', 'skeuomorphism': '#EADFC6', 'neobrutalism': '#FFE8A3', 'brutalist': '#FFFFFF', 'terminal': '#0A0A0A', 'pixel-art': '#0F0F2D', 'manga': '#FFFFFF', 'y2k-chrome': '#DDE2EA', 'vaporwave': '#2A0A4A', 'bauhaus': '#F4EFE6', 'hand-drawn': '#FBF7EC' };
+  var uiKat = '';
+  var CHEV = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  function uiAktif() {
+    var u = lsGet('kk-ui');
+    if (UI_LIST.indexOf(u) === -1) {
+      u = lsGet('kk-tema') === 'kaca' ? 'glassmorphism' : 'flat-minimalis';   // tema Kaca lama pindah jadi gaya Glassmorphism
+      if (lsGet('kk-tema') === 'kaca') { lsSet('kk-ui', u); lsSet('kk-tema', 'auto'); }
+    }
+    return u;
+  }
+  function uiKunci(u) { return UI_BEBAS.indexOf(u || uiAktif()) === -1; }
+
   function applyTema() {
+    var ui = uiAktif();
+    document.documentElement.setAttribute('data-ui', ui);
     var tm = lsGet('kk-tema');
     if (TEMA.indexOf(tm) === -1) tm = 'auto';
-    if (tm === 'auto') document.documentElement.removeAttribute('data-theme');
+    var kunci = uiKunci(ui);
+    if (tm === 'auto' || kunci) document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', tm);
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute('content', tm === 'auto' ? '#F2F4F1' : TEMA_BAR[tm]);
+    if (m) m.setAttribute('content', kunci ? UI_BAR[ui] : (tm === 'auto' ? '#F2F4F1' : TEMA_BAR[tm]));
     return tm;
   }
   function applyUkuran() {
@@ -2241,7 +2494,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         if (ff.kas) it.push(['iuran', 'Nominal kas', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
         it.push(['data', 'Data', 'Cadangan dan rekap kas']);
       }
-      it.push(['tampilan', 'Tampilan', 'Tema warna dan ukuran teks']);
+      it.push(['tampilan', 'Tampilan', 'Gaya UI, tema warna, dan ukuran teks']);
       it.push(['tentang', 'Tentang', 'Versi dan privasi']);
       h = '<div class="smenu">' + it.map(function (x) {
         return '<button type="button" data-go="' + x[0] + '">' + IC[x[0]] + '<span><b>' + x[1] + '</b><small>' + esc(x[2]) + '</small></span></button>';
@@ -2377,22 +2630,31 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         biru: 'linear-gradient(90deg,#222F4C 55%,#26344F 55% 80%,#9DB8E0 80%)',
         mawar: 'linear-gradient(90deg,#F3E4E1 55%,#FBF3F1 55% 80%,#8C2F39 80%)',
         eukaliptus: 'linear-gradient(90deg,#EBF0EC 55%,#F9FBF9 55% 80%,#2C3E35 80%)',
-        nordik: 'linear-gradient(90deg,#EDF1F4 55%,#FFFFFF 55% 80%,#1E4E5F 80%)',
-        kaca: 'linear-gradient(90deg,#0B1020 55%,#22305A 55% 80%,#6FA8FF 80%)'
+        nordik: 'linear-gradient(90deg,#EDF1F4 55%,#FFFFFF 55% 80%,#1E4E5F 80%)'
       };
-      var nm = { auto: 'Otomatis', light: 'Terang', dark: 'Gelap', hitam: 'Hitam', biru: 'Biru', mawar: 'Mawar', eukaliptus: 'Eukaliptus', nordik: 'Nordik', kaca: 'Kaca' };
+      var nm = { auto: 'Otomatis', light: 'Terang', dark: 'Gelap', hitam: 'Hitam', biru: 'Biru', mawar: 'Mawar', eukaliptus: 'Eukaliptus', nordik: 'Nordik' };
       var un = { '75': 'Mini', '88': 'Kecil', '100': 'Normal', '118': 'Besar' };
-      h = '<div class="card"><p class="sm">Tema warna (berlaku di perangkat ini)</p><div class="themes">' +
+      var uiNow = uiAktif(), kunciUI = uiKunci(uiNow);
+      h = '<div class="card"><p class="sm">Gaya UI (berlaku di perangkat ini)</p><div class="uikat">' +
+            UI_KAT.map(function (k) {
+              var buka = uiKat === k.id;
+              return '<button type="button" data-kat="' + k.id + '" aria-expanded="' + buka + '"><span><b>' + k.t + '</b><small>' + k.d + '</small></span>' + CHEV + '</button>' +
+                (buka ? '<div class="uigaya">' + k.items.map(function (i) {
+                  return '<button type="button" data-ui="' + i[0] + '" aria-pressed="' + (i[0] === uiNow) + '"><span class="sw" style="background:' + i[3] + '"></span>' + i[1] + '<small>' + i[2] + '</small></button>';
+                }).join('') + '</div>' : '');
+            }).join('') + '</div></div>' +
+          '<div class="card"><p class="sm">Tema warna (berlaku di perangkat ini)</p><div class="themes' + (kunciUI ? ' kunci' : '') + '">' +
             TEMA.map(function (k) {
-              return '<button type="button" data-t="' + k + '" aria-pressed="' + (k === tm) + '"><span class="sw" style="background:' + sw[k] + '"></span>' + nm[k] + '</button>';
+              return '<button type="button" data-t="' + k + '" aria-pressed="' + (k === tm) + '"' + (kunciUI ? ' disabled' : '') + '><span class="sw" style="background:' + sw[k] + '"></span>' + nm[k] + '</button>';
             }).join('') + '</div>' +
+          (kunciUI ? '<p class="sm">Palet warna otomatis mengikuti gaya UI ini.</p>' : '') +
           '<p class="sm" style="margin-top:8px">Ukuran teks (berlaku di perangkat ini)</p><div class="sizes">' +
             UKURAN.map(function (k) {
               return '<button type="button" data-u="' + k + '" aria-pressed="' + (k === uk) + '">' + un[k] + '</button>';
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.6</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.7</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
