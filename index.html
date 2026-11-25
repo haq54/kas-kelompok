@@ -280,20 +280,51 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 :root[data-ui="material-you"] .chips button, :root[data-ui="material-you"] .selbtn { border-radius: 999px; }
 
 :root[data-ui="neumorphism"] {
-  --r: 20px; --rf: 14px; --rb: 14px; --rn: 12px; --bw: 0px;
+  --r: 24px; --rf: 16px; --rb: 16px; --rn: 14px; --bw: 0px;
   --surface: var(--bg); --field: var(--bg);
-  --nl: rgba(255, 255, 255, .85); --nd: rgba(40, 60, 50, .2);
-  --sh: 7px 7px 15px var(--nd), -7px -7px 15px var(--nl);
-  --shb: 4px 4px 9px var(--nd), -4px -4px 9px var(--nl);
+  --nl: rgba(255, 255, 255, 1); --nd: rgba(60, 40, 55, .42);
+  --sh: 14px 14px 30px var(--nd), -14px -14px 30px var(--nl);
+  --shb: 8px 8px 16px var(--nd), -8px -8px 16px var(--nl);
+  --shi: inset 6px 6px 12px var(--nd), inset -6px -6px 12px var(--nl);
 }
-:root[data-ui="neumorphism"][data-theme="dark"], :root[data-ui="neumorphism"][data-theme="hitam"], :root[data-ui="neumorphism"][data-theme="biru"] { --nl: rgba(255, 255, 255, .07); --nd: rgba(0, 0, 0, .55); }
-@media (prefers-color-scheme: dark) { :root[data-ui="neumorphism"]:not([data-theme]) { --nl: rgba(255, 255, 255, .07); --nd: rgba(0, 0, 0, .55); } }
-:root[data-ui="neumorphism"] .wrap { gap: 20px; }
-:root[data-ui="neumorphism"] input, :root[data-ui="neumorphism"] select, :root[data-ui="neumorphism"] textarea, :root[data-ui="neumorphism"] .selbtn { border: 0; box-shadow: inset 3px 3px 7px var(--nd), inset -3px -3px 7px var(--nl); }
-:root[data-ui="neumorphism"] .btn:active { box-shadow: inset 3px 3px 7px var(--nd), inset -3px -3px 7px var(--nl); }
-:root[data-ui="neumorphism"] .btn.ghost, :root[data-ui="neumorphism"] .chips button, :root[data-ui="neumorphism"] .themes button, :root[data-ui="neumorphism"] .sizes button { border: 0; box-shadow: var(--shb); }
-:root[data-ui="neumorphism"] .chips button[aria-pressed="true"], :root[data-ui="neumorphism"] .themes button[aria-pressed="true"], :root[data-ui="neumorphism"] .sizes button[aria-pressed="true"] { box-shadow: inset 3px 3px 7px var(--nd), inset -3px -3px 7px var(--nl); color: var(--accent); }
-:root[data-ui="neumorphism"] .m, :root[data-ui="neumorphism"] .pv, :root[data-ui="neumorphism"] .grid > div, :root[data-ui="neumorphism"] th, :root[data-ui="neumorphism"] td { border-top-color: color-mix(in srgb, var(--nd) 55%, transparent); }
+/* mode gelap: latar sedikit diangkat agar bayangan gelap terlihat, sisi terang dipertegas */
+/* mode gelap: latar dinaikkan sedikit agar bayangan gelap terlihat, sisi terang dibuat halus supaya nyaman */
+:root[data-ui="neumorphism"][data-theme="dark"], :root[data-ui="neumorphism"][data-theme="hitam"], :root[data-ui="neumorphism"][data-theme="biru"] {
+  --nl: rgba(255, 255, 255, .085); --nd: rgba(0, 0, 0, .62); --bg-img: none;
+  --sh: 12px 12px 26px var(--nd), -10px -10px 22px var(--nl);
+  --shb: 7px 7px 15px var(--nd), -6px -6px 13px var(--nl);
+  --shi: inset 6px 6px 12px var(--nd), inset -5px -5px 10px var(--nl);
+}
+:root[data-ui="neumorphism"][data-theme="dark"] { --bg: #232E29; }
+:root[data-ui="neumorphism"][data-theme="hitam"] { --bg: #1C1D1D; }
+:root[data-ui="neumorphism"][data-theme="biru"] { --bg: #26344F; }
+@media (prefers-color-scheme: dark) {
+  :root[data-ui="neumorphism"]:not([data-theme]) {
+    --bg: #232E29; --nl: rgba(255, 255, 255, .085); --nd: rgba(0, 0, 0, .62);
+    --sh: 12px 12px 26px var(--nd), -10px -10px 22px var(--nl);
+    --shb: 7px 7px 15px var(--nd), -6px -6px 13px var(--nl);
+    --shi: inset 6px 6px 12px var(--nd), inset -5px -5px 10px var(--nl);
+  }
+}
+:root[data-ui="neumorphism"] .wrap { gap: 26px; }
+:root[data-ui="neumorphism"] .card { padding: 18px; background: linear-gradient(145deg, color-mix(in srgb, var(--bg) 86%, #fff 14%), color-mix(in srgb, var(--bg) 93%, #000 7%)); }
+/* yang cekung: kolom isian, wadah tab, jalur progres */
+:root[data-ui="neumorphism"] input, :root[data-ui="neumorphism"] select, :root[data-ui="neumorphism"] textarea, :root[data-ui="neumorphism"] .selbtn,
+:root[data-ui="neumorphism"] nav, :root[data-ui="neumorphism"] .seg, :root[data-ui="neumorphism"] .track { border: 0; box-shadow: var(--shi); background: var(--bg); }
+:root[data-ui="neumorphism"] nav, :root[data-ui="neumorphism"] .seg { padding: 6px; }
+:root[data-ui="neumorphism"] .track { height: 12px; border-radius: 8px; }
+:root[data-ui="neumorphism"] .track > i { border-radius: 8px; box-shadow: 2px 2px 5px var(--nd), 0 0 10px color-mix(in srgb, var(--in) 65%, transparent); }
+/* tab aktif: tombol timbul berteks aksen (bukan blok gelap) */
+:root[data-ui="neumorphism"] nav button[aria-pressed=true], :root[data-ui="neumorphism"] .seg button[aria-pressed=true] { background: var(--bg); color: var(--accent); box-shadow: var(--shb); }
+/* yang timbul: tombol */
+:root[data-ui="neumorphism"] .btn:not(.ghost) { background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 86%, #fff 14%), color-mix(in srgb, var(--accent) 92%, #000 8%)); box-shadow: var(--shb), 0 10px 22px color-mix(in srgb, var(--accent) 48%, transparent); }
+:root[data-ui="neumorphism"] .btn:active { box-shadow: var(--shi); transform: scale(.985); }
+:root[data-ui="neumorphism"] .btn.ghost, :root[data-ui="neumorphism"] .chips button, :root[data-ui="neumorphism"] .themes button, :root[data-ui="neumorphism"] .sizes button, :root[data-ui="neumorphism"] .uikat > button, :root[data-ui="neumorphism"] .uigaya button { border: 0; box-shadow: var(--shb); background: var(--bg); }
+:root[data-ui="neumorphism"] .chips button[aria-pressed="true"], :root[data-ui="neumorphism"] .themes button[aria-pressed="true"], :root[data-ui="neumorphism"] .sizes button[aria-pressed="true"], :root[data-ui="neumorphism"] .uikat > button[aria-expanded="true"], :root[data-ui="neumorphism"] .uigaya button[aria-pressed="true"] { box-shadow: var(--shi); color: var(--accent); }
+:root[data-ui="neumorphism"] .alert { box-shadow: var(--shi); }
+:root[data-ui="neumorphism"] .chip { box-shadow: 3px 3px 6px var(--nd), -3px -3px 6px var(--nl); }
+:root[data-ui="neumorphism"] .smenu button { border-bottom-color: color-mix(in srgb, var(--nd) 45%, transparent); }
+:root[data-ui="neumorphism"] .m, :root[data-ui="neumorphism"] .pv, :root[data-ui="neumorphism"] .grid > div, :root[data-ui="neumorphism"] th, :root[data-ui="neumorphism"] td { border-top-color: color-mix(in srgb, var(--nd) 45%, transparent); }
 
 /* -- Kategori Modern & Atmosferik -- */
 :root[data-ui="glassmorphism"] {
@@ -2421,7 +2452,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
       ['glassmorphism', 'Glassmorphism', 'Kaca buram semi-transparan', 'linear-gradient(90deg,#0B1020 55%,#22305A 55% 80%,#6FA8FF 80%)'],
       ['liquid-glass', 'Liquid Glass', 'Bulatan cahaya dan kilau tepi', 'radial-gradient(circle at 20% 30%,#7C5CFF,transparent 55%),radial-gradient(circle at 85% 70%,#00C8FF,transparent 55%),#05070D'],
       ['aurora-gradient', 'Aurora Gradient', 'Gradasi aurora lembut', 'linear-gradient(120deg,#34D399,#6366F1 55%,#EC4899)'],
-      ['neumorphism', 'Neumorphism', 'Timbul dan tenggelam lembut', 'linear-gradient(135deg,#fff,#E6EAE8)'],
+      ['neumorphism', 'Neumorphism', 'Timbul dan cekung, bayangan lembut', 'linear-gradient(135deg,#fff,#E6EAE8)'],
       ['skeuomorphism', 'Skeuomorphism', 'Seperti buku kas dan struk', 'linear-gradient(90deg,#EADFC6 55%,#FBF6E8 55% 80%,#7A4A1C 80%)'] ] },
     { id: 'eksperimen', t: 'Eksperimental & Artistik', d: 'Tampilan unik, retro, dan nyentrik', items: [
       ['neobrutalism', 'Neobrutalism', 'Garis tebal, bayangan kaku', 'linear-gradient(90deg,#FFE8A3 55%,#fff 55% 80%,#4F35E8 80%)'],
@@ -2654,7 +2685,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 2.7</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.0</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
