@@ -2,7 +2,10 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<script>try { var _t = localStorage.getItem('kk-tema'), _g = localStorage.getItem('kk-ui'), _UI = ['flat-minimalis', 'material-you', 'glassmorphism', 'liquid-glass', 'aurora-gradient', 'aurora-terang', 'neumorphism', 'skeuomorphism', 'neobrutalism', 'brutalist', 'terminal', 'pixel-art', 'manga', 'y2k-chrome', 'vaporwave', 'bauhaus', 'hand-drawn'], _KU = ['glassmorphism', 'liquid-glass', 'aurora-gradient', 'aurora-terang', 'skeuomorphism', 'neobrutalism', 'brutalist', 'terminal', 'pixel-art', 'manga', 'y2k-chrome', 'vaporwave', 'bauhaus', 'hand-drawn']; if (_UI.indexOf(_g) < 0) _g = _t === 'kaca' ? 'glassmorphism' : 'flat-minimalis'; document.documentElement.setAttribute('data-ui', _g); if (_KU.indexOf(_g) < 0 && ['light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; } catch (e) {}</script>
+<script>try { var _t = localStorage.getItem('kk-tema'), _g = localStorage.getItem('kk-ui'), _UI = ['flat-minimalis', 'material-you', 'glassmorphism', 'liquid-glass', 'aurora-gradient', 'aurora-terang', 'neumorphism', 'skeuomorphism', 'neobrutalism', 'brutalist', 'terminal', 'pixel-art', 'manga', 'y2k-chrome', 'vaporwave', 'bauhaus', 'hand-drawn'], _KU = ['glassmorphism', 'liquid-glass', 'aurora-gradient', 'aurora-terang', 'skeuomorphism', 'neobrutalism', 'brutalist', 'terminal', 'pixel-art', 'manga', 'y2k-chrome', 'vaporwave', 'bauhaus', 'hand-drawn']; if (_UI.indexOf(_g) < 0) _g = _t === 'kaca' ? 'glassmorphism' : 'flat-minimalis'; document.documentElement.setAttribute('data-ui', _g); if (_KU.indexOf(_g) < 0 && ['light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'].indexOf(_t) > -1) document.documentElement.setAttribute('data-theme', _t); var _u = localStorage.getItem('kk-ukuran'); if (['75', '88', '100', '118'].indexOf(_u) > -1) document.documentElement.style.fontSize = _u + '%'; var _FN = { 'material-you': 'Outfit:wght@400;500;600;700', 'glassmorphism': 'DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700', 'liquid-glass': 'DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700', 'aurora-gradient': 'DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700', 'aurora-terang': 'DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700', 'skeuomorphism': 'Lora:wght@400;500;600;700&family=Courier+Prime:wght@400;700', 'neobrutalism': 'Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700', 'brutalist': 'Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700', 'terminal': 'Fira+Code:wght@400;500;600;700', 'pixel-art': 'Silkscreen:wght@400;700', 'manga': 'Comic+Neue:wght@400;700&family=Space+Mono:wght@400;700', 'y2k-chrome': 'Syne:wght@400;500;600;700;800&family=Chakra+Petch:wght@400;500;600;700', 'vaporwave': 'Syne:wght@400;500;600;700;800&family=Chakra+Petch:wght@400;500;600;700', 'bauhaus': 'Josefin+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600', 'hand-drawn': 'Patrick+Hand&family=Kalam:wght@400;700' };
+/* Font gaya UI dimuat malas: hanya saat gaya itu dipakai/dipilih (flat & neumorphism memakai font bawaan). */
+window.kkFont = function (ui) { var q = _FN[ui]; if (!q) return; var h = 'https://fonts.googleapis.com/css2?family=' + q + '&display=swap'; if (document.querySelector('link[href="' + h + '"]')) return; var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); };
+window.kkFont(_g); } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kaskita</title>
 <meta name="description" content="Kaskita: pencatatan kas kelompok">
@@ -10,7 +13,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon_192x192.png">
 <link rel="apple-touch-icon" href="icon_192x192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Pixelify+Sans:wght@500;600&family=Press+Start+2P&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
 
 <style>
 /* ===== Tema ===== */
@@ -25,9 +30,10 @@
   --muka: #0B76B0;
   --out: #B23A2B; --out-soft: #F8E6E2;
   --warn: #8A6100; --warn-soft: #FBF0D0;
-  --fd: "Familjen Grotesk", system-ui, sans-serif;
-  --fb: "IBM Plex Sans", system-ui, sans-serif;
-  --fm: "IBM Plex Mono", ui-monospace, monospace;
+  --font-main: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
+  --fz: 1; /* pengali ukuran teks per gaya (pixel 0.85, hand-drawn 1.1) */
+  --fd: var(--font-main); --fb: var(--font-main); --fm: var(--font-mono);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
@@ -89,15 +95,15 @@ body {
   margin: 0;
   background-color: var(--bg); background-image: var(--bg-img); background-attachment: fixed;
   color: var(--ink);
-  font: .9375rem/1.5 var(--fb);
+  font: calc(.9375rem * var(--fz, 1))/1.5 var(--fb);
   padding: calc(20px + env(safe-area-inset-top, 0px))
            max(14px, env(safe-area-inset-right, 0px))
            calc(40px + env(safe-area-inset-bottom, 0px))
            max(14px, env(safe-area-inset-left, 0px));
 }
 button, input, select, textarea { font: inherit; color: inherit; }
-h1 { font: 700 1.6rem/1.2 var(--fd); margin: 0; }
-h2 { font: 600 1.05rem/1.3 var(--fd); margin: 0; }
+h1 { font: 700 calc(1.6rem * var(--fz, 1))/1.2 var(--fd); margin: 0; }
+h2 { font: 600 calc(1.05rem * var(--fz, 1))/1.3 var(--fd); margin: 0; }
 
 .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
@@ -106,13 +112,13 @@ header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content:
 .dvmain { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 14px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
 .dvmain svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .dvmain b { display: block; font-weight: 600; }
-.dvmain small { display: block; color: var(--muted); font-size: .85rem; }
+.dvmain small { display: block; color: var(--muted); font-size: calc(.85rem * var(--fz, 1)); }
 .dvdot { width: 52px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
 .dvdot[aria-expanded="true"] { color: var(--accent); }
 .dvp { border-top: 1px solid var(--line); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .badge.dev { border-color: var(--accent); color: var(--accent); }
 .badge {
-  font-size: .78rem; font-weight: 600; color: var(--muted);
+  font-size: calc(.78rem * var(--fz, 1)); font-weight: 600; color: var(--muted);
   background: none; border: 1px solid var(--line); border-radius: 99px;
   padding: 2px 10px; cursor: pointer;
 }
@@ -124,7 +130,7 @@ nav {
 }
 nav button {
   height: 36px; border: 0; border-radius: var(--rn); background: none;
-  color: var(--muted); font-weight: 600; font-size: .88rem; cursor: pointer;
+  color: var(--muted); font-weight: 600; font-size: calc(.88rem * var(--fz, 1)); cursor: pointer;
 }
 nav button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
 
@@ -133,18 +139,20 @@ nav button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
   background: var(--surface); border: var(--bw) solid var(--line); border-radius: var(--r); box-shadow: var(--sh);
   padding: 14px; display: flex; flex-direction: column; gap: 10px;
 }
-.lab { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.big { font: 700 clamp(2rem, 8vw, 2.8rem)/1.1 var(--fd); font-variant-numeric: tabular-nums; }
-.mono { font-family: var(--fm); font-variant-numeric: tabular-nums; }
+.lab { font-family: var(--font-mono); font-size: calc(.72rem * var(--fz, 1)); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.big { font: 700 calc(clamp(2rem, 8vw, 2.8rem) * var(--fz, 1))/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); }
+/* Semua angka sejajar vertikal (nominal, saldo, tabel anggota, statistik) */
+body, input, select, textarea, button { font-variant-numeric: tabular-nums; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .grid > div { border-top: 1px solid var(--line); padding-top: 8px; min-width: 0; }
-.sm { font-size: .85rem; color: var(--muted); margin: 0; }
+.sm { font-size: calc(.85rem * var(--fz, 1)); color: var(--muted); margin: 0; }
 .in { color: var(--in); }
 .out { color: var(--out); }
-.err { color: var(--out); font-size: .88rem; margin: 0; }
-.ok  { color: var(--in);  font-size: .88rem; margin: 0; }
+.err { color: var(--out); font-size: calc(.88rem * var(--fz, 1)); margin: 0; }
+.ok  { color: var(--in);  font-size: calc(.88rem * var(--fz, 1)); margin: 0; }
 
-.alert { background: var(--warn-soft); color: var(--warn); border-radius: var(--rf); padding: 10px 12px; font-size: .9rem; font-weight: 500; }
+.alert { background: var(--warn-soft); color: var(--warn); border-radius: var(--rf); padding: 10px 12px; font-size: calc(.9rem * var(--fz, 1)); font-weight: 500; }
 .alert.red { background: var(--out-soft); color: var(--out); }
 .alert.green { background: var(--in-soft); color: var(--in); }
 
@@ -183,8 +191,8 @@ textarea { min-height: 110px; resize: vertical; }
 }
 .sho:hover, .sho:active { background: var(--field); }
 .sho[aria-selected="true"] { background: var(--field); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
-.sho small { display: block; color: var(--muted); font-weight: 400; font-size: .82rem; }
-.sho .st { flex: none; font-size: .78rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--out-soft); color: var(--out); white-space: nowrap; }
+.sho small { display: block; color: var(--muted); font-weight: 400; font-size: calc(.82rem * var(--fz, 1)); }
+.sho .st { flex: none; font-size: calc(.78rem * var(--fz, 1)); font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--out-soft); color: var(--out); white-space: nowrap; }
 .sho .st.ok { background: var(--in-soft); color: var(--in); }
 
 .row > * { flex: 1 1 9rem; }
@@ -195,12 +203,12 @@ textarea { min-height: 110px; resize: vertical; }
   font-weight: 600; cursor: pointer; flex: 0 0 auto; width: auto;
 }
 .btn.ghost { background: none; border: 1px solid var(--line); color: var(--ink); }
-.btn.sm2 { min-height: 34px; padding: 0 12px; font-size: .85rem; }
+.btn.sm2 { min-height: 34px; padding: 0 12px; font-size: calc(.85rem * var(--fz, 1)); }
 .btn.del { color: var(--out); }
 .btn:disabled { opacity: .6; cursor: default; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 .seg[hidden] { display: none; }
-.seg button { height: 34px; border: 0; border-radius: 7px; background: none; color: var(--muted); font-weight: 600; font-size: .85rem; cursor: pointer; }
+.seg button { height: 34px; border: 0; border-radius: 7px; background: none; color: var(--muted); font-weight: 600; font-size: calc(.85rem * var(--fz, 1)); cursor: pointer; }
 .seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
 .pen { display: flex; justify-content: flex-end; }
 .pen .btn { width: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
@@ -214,7 +222,7 @@ textarea { min-height: 110px; resize: vertical; }
 .m:first-child { border-top: 0; }
 .m b { display: block; }
 .m small { color: var(--muted); font-family: var(--fm); }
-.chip { font-size: .78rem; font-weight: 600; border-radius: 99px; padding: 2px 10px; white-space: nowrap; }
+.chip { font-size: calc(.78rem * var(--fz, 1)); font-weight: 600; border-radius: 99px; padding: 2px 10px; white-space: nowrap; }
 .lunas  { background: var(--in-soft);   color: var(--in); }
 .kurang { background: var(--warn-soft); color: var(--warn); }
 :root[data-theme="dark"], :root[data-theme="hitam"], :root[data-theme="biru"] { --muka: #38bdf8; }
@@ -225,11 +233,11 @@ textarea { min-height: 110px; resize: vertical; }
 .det { background: var(--field); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 
 /* ===== Tabel & baris riwayat ===== */
-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+table { width: 100%; border-collapse: collapse; font-size: calc(.88rem * var(--fz, 1)); }
 th, td { padding: 6px 4px; text-align: right; border-top: 1px solid var(--line); }
 th:first-child, td:first-child { text-align: left; }
-th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-top: 0; }
-.pv { font-size: .85rem; border-top: 1px solid var(--line); padding: 4px 0; display: flex; gap: 8px; align-items: center; }
+th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform: uppercase; border-top: 0; }
+.pv { font-size: calc(.85rem * var(--fz, 1)); border-top: 1px solid var(--line); padding: 4px 0; display: flex; gap: 8px; align-items: center; }
 .pv > :nth-last-child(1):not(:first-child) { margin-left: auto; }
 .pv.hs { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: start; padding: 6px 0; }
 .pv.hs.ha { grid-template-columns: 78px 1fr; }
@@ -249,25 +257,25 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 .smenu button:last-child { border-bottom: 0; }
 .smenu svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .smenu b { display: block; font-weight: 600; }
-.smenu small { display: block; color: var(--muted); font-size: .85rem; margin-top: 2px; overflow-wrap: anywhere; }
+.smenu small { display: block; color: var(--muted); font-size: calc(.85rem * var(--fz, 1)); margin-top: 2px; overflow-wrap: anywhere; }
 .track { height: 8px; border-radius: 4px; background: var(--field); border: 1px solid var(--line); overflow: hidden; }
 .track > i { display: block; height: 100%; background: var(--in); border-radius: 4px; }
 .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.themes button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-size: .85rem; font-weight: 600; cursor: pointer; }
+.themes button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-size: calc(.85rem * var(--fz, 1)); font-weight: 600; cursor: pointer; }
 .themes button[aria-pressed="true"], .sizes button[aria-pressed="true"] { border-color: var(--accent); }
 .themes .sw { display: block; width: 100%; height: 34px; border-radius: 8px; border: 1px solid rgba(128, 128, 128, .45); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
-.chips button { min-height: 36px; padding: 0 12px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: .85rem; font-weight: 600; cursor: pointer; }
+.chips button { min-height: 36px; padding: 0 12px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: calc(.85rem * var(--fz, 1)); font-weight: 600; cursor: pointer; }
 .chips button[aria-pressed="true"] { border-color: var(--accent); }
 .sizes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .sizes button { min-height: 40px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-weight: 600; cursor: pointer; }
-.kv { display: flex; justify-content: space-between; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 8px 0; font-size: .9rem; }
+.kv { display: flex; justify-content: space-between; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 8px 0; font-size: calc(.9rem * var(--fz, 1)); }
 
 /* ===== Layar login ===== */
 #lgn { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
 .lgc { width: 100%; max-width: 400px; gap: 12px; padding: 22px; }
 .lgc .btn { width: 100%; }
-.lnk { background: none; border: 0; color: var(--accent); text-decoration: underline; font-size: .88rem; cursor: pointer; align-self: center; padding: 6px; }
+.lnk { background: none; border: 0; color: var(--accent); text-decoration: underline; font-size: calc(.88rem * var(--fz, 1)); cursor: pointer; align-self: center; padding: 6px; }
 /* ===== Gaya UI (atribut data-ui pada <html>) =====
    Gaya berpalet bebas (flat-minimalis, material-you, neumorphism) mengikuti "Tema warna".
    Gaya lain mengunci seluruh palet sendiri supaya kontras angka kas tetap terbaca. */
@@ -496,7 +504,6 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   --bg: #0A0A0A; --surface: #0D120D; --field: #080A08; --ink: #22C55E; --muted: #5BB77B;
   --line: #1E7B3F; --accent: #22C55E; --accent-ink: #0A0A0A; --in: #4ADE80; --in-soft: rgba(34, 197, 94, .14);
   --out: #FF6B6B; --out-soft: rgba(255, 107, 107, .14); --warn: #FACC15; --warn-soft: rgba(250, 204, 21, .13);
-  --fd: "IBM Plex Mono", ui-monospace, "Courier New", monospace; --fb: "IBM Plex Mono", ui-monospace, "Courier New", monospace; --fm: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
   --r: 2px; --rf: 2px; --rb: 2px; --rn: 2px; --sh: none;
 }
 :root[data-ui="terminal"] .card, :root[data-ui="terminal"] nav, :root[data-ui="terminal"] .smenu { border-style: dashed; border-color: #22C55E; }
@@ -510,17 +517,12 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   --surface: #2A1D78; --field: #1D1458; --ink: #F8F8F8; --muted: #CFCFFF;
   --line: #FFFFFF; --accent: #FFD93D; --accent-ink: #1A1A1A; --in: #5CFF9D; --in-soft: rgba(92, 255, 157, .16);
   --out: #FF8FA3; --out-soft: rgba(255, 143, 163, .18); --warn: #FFD93D; --warn-soft: rgba(255, 217, 61, .16);
-  --fd: "Press Start 2P", "Pixelify Sans", "Courier New", monospace; --fb: "Pixelify Sans", "Courier New", ui-monospace, monospace; --fm: "Pixelify Sans", "Courier New", ui-monospace, monospace;
   --r: 0px; --rf: 0px; --rb: 0px; --rn: 0px; --bw: 3px;
   --sh: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, .45); --shb: 3px 3px 0 #000, 6px 6px 0 rgba(0, 0, 0, .4);
 }
 :root[data-ui="pixel-art"] * { border-radius: 0 !important; }
-:root[data-ui="pixel-art"] body { background-size: 16px 16px; font-weight: 500; font-size: 1rem; }
-:root[data-ui="pixel-art"] h1, :root[data-ui="pixel-art"] h2 { font-weight: 400; letter-spacing: 0; }
-:root[data-ui="pixel-art"] h1 { font-size: 1.1rem; line-height: 1.6; }
-:root[data-ui="pixel-art"] h2 { font-size: .74rem; line-height: 1.7; }
-:root[data-ui="pixel-art"] .big { font-family: "Press Start 2P", "Pixelify Sans", monospace; font-weight: 400; font-size: clamp(1.25rem, 6.2vw, 1.8rem); line-height: 1.4; }
-:root[data-ui="pixel-art"] .lab { font-family: "Press Start 2P", "Pixelify Sans", monospace; font-size: .55rem; letter-spacing: 0; }
+:root[data-ui="pixel-art"] body { background-size: 16px 16px; font-size: calc(1rem * var(--fz, 1)); }
+:root[data-ui="pixel-art"] h1, :root[data-ui="pixel-art"] h2, :root[data-ui="pixel-art"] .lab { letter-spacing: 0; }
 :root[data-ui="pixel-art"] .card:has(.big) { background: #3D2BA3; border-color: #fff; }
 :root[data-ui="pixel-art"] input, :root[data-ui="pixel-art"] select, :root[data-ui="pixel-art"] textarea, :root[data-ui="pixel-art"] .selbtn, :root[data-ui="pixel-art"] .btn.ghost, :root[data-ui="pixel-art"] .chips button, :root[data-ui="pixel-art"] .themes button, :root[data-ui="pixel-art"] .sizes button { border: 3px solid #fff; }
 :root[data-ui="pixel-art"] .btn { border: 3px solid #000; font-weight: 600; }
@@ -606,7 +608,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
 }
 :root[data-ui="bauhaus"] * { border-radius: 0 !important; }
 :root[data-ui="bauhaus"] h1 { font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
-:root[data-ui="bauhaus"] h2 { font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: .95rem; border-bottom: 3px solid #111; padding-bottom: 4px; }
+:root[data-ui="bauhaus"] h2 { font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: calc(.95rem * var(--fz, 1)); border-bottom: 3px solid #111; padding-bottom: 4px; }
 :root[data-ui="bauhaus"] .card { border-left-width: 10px; }
 :root[data-ui="bauhaus"] .wrap > .card:nth-of-type(3n+1) { border-left-color: #D62828; }
 :root[data-ui="bauhaus"] .wrap > .card:nth-of-type(3n+2) { border-left-color: #F2C200; }
@@ -638,11 +640,22 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   --line: #2B2B2B; --accent: #2F5FD0; --accent-ink: #FFFFFF; --in: #2A7A33; --in-soft: #E1F1DD;
   --out: #C0281F; --out-soft: #FBE1DC; --warn: #7A5200; --warn-soft: #F8EBC2;
   --r: 255px 15px 225px 15px / 15px 225px 15px 255px; --rf: 14px 5px 12px 5px / 5px 12px 5px 14px; --rb: 14px 5px 12px 5px / 5px 12px 5px 14px; --rn: 12px 4px 10px 4px / 4px 10px 4px 12px; --bw: 2px;
-  --fd: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", cursive;
 }
 :root[data-ui="hand-drawn"] body { background-size: 14px 14px; }
 :root[data-ui="hand-drawn"] .card { padding: 18px 20px; }
 :root[data-ui="hand-drawn"] input, :root[data-ui="hand-drawn"] select, :root[data-ui="hand-drawn"] textarea, :root[data-ui="hand-drawn"] .selbtn, :root[data-ui="hand-drawn"] .btn.ghost { border: 2px solid #2B2B2B; }
+
+/* -- Tipografi per gaya UI: --font-main (teks) dan --font-mono (angka/label) -- */
+:root[data-ui="material-you"] { --font-main: "Outfit", system-ui, sans-serif; }
+:root[data-ui="glassmorphism"], :root[data-ui="liquid-glass"], :root[data-ui="aurora-gradient"], :root[data-ui="aurora-terang"] { --font-main: "DM Sans", system-ui, sans-serif; --font-mono: "Space Mono", ui-monospace, monospace; }
+:root[data-ui="skeuomorphism"] { --font-main: "Lora", Georgia, serif; --font-mono: "Courier Prime", "Courier New", monospace; }
+:root[data-ui="neobrutalism"], :root[data-ui="brutalist"] { --font-main: "Space Grotesk", system-ui, sans-serif; --font-mono: "Space Mono", ui-monospace, monospace; }
+:root[data-ui="terminal"] { --font-main: "Fira Code", ui-monospace, "Courier New", monospace; --font-mono: "Fira Code", ui-monospace, "Courier New", monospace; }
+:root[data-ui="pixel-art"] { --font-main: "Silkscreen", ui-monospace, "Courier New", monospace; --font-mono: "Silkscreen", ui-monospace, "Courier New", monospace; --fz: .85; }
+:root[data-ui="manga"] { --font-main: "Comic Neue", "Comic Sans MS", cursive; --font-mono: "Space Mono", ui-monospace, monospace; }
+:root[data-ui="y2k-chrome"], :root[data-ui="vaporwave"] { --font-main: "Syne", system-ui, sans-serif; --font-mono: "Chakra Petch", ui-monospace, monospace; }
+:root[data-ui="bauhaus"] { --font-main: "Josefin Sans", system-ui, sans-serif; --font-mono: "IBM Plex Mono", ui-monospace, monospace; }
+:root[data-ui="hand-drawn"] { --font-main: "Patrick Hand", "Segoe Print", "Comic Sans MS", cursive; --font-mono: "Kalam", "Segoe Print", cursive; --fz: 1.1; }
 
 /* -- Pemilih gaya di Pengaturan > Tampilan -- */
 .uikat { display: flex; flex-direction: column; gap: 8px; }
@@ -651,15 +664,15 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer;
 }
 .uikat > button b { display: block; font: 600 1rem/1.3 var(--fd); }
-.uikat > button small { display: block; color: var(--muted); font-size: .82rem; margin-top: 2px; }
+.uikat > button small { display: block; color: var(--muted); font-size: calc(.82rem * var(--fz, 1)); margin-top: 2px; }
 .uikat > button[aria-expanded="true"] { border-color: var(--accent); }
 .uikat > button svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; transition: transform .15s; }
 .uikat > button[aria-expanded="true"] svg { transform: rotate(180deg); }
 .uigaya { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 2px 0 6px; }
-.uigaya button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-weight: 600; font-size: .85rem; cursor: pointer; text-align: left; }
+.uigaya button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-weight: 600; font-size: calc(.85rem * var(--fz, 1)); cursor: pointer; text-align: left; }
 .uigaya button[aria-pressed="true"] { border-color: var(--accent); }
 .uigaya .sw { display: block; width: 100%; height: 34px; border-radius: 8px; border: 1px solid rgba(128, 128, 128, .45); }
-.uigaya small { color: var(--muted); font-weight: 400; font-size: .75rem; }
+.uigaya small { color: var(--muted); font-weight: 400; font-size: calc(.75rem * var(--fz, 1)); }
 .themes.kunci { opacity: .4; pointer-events: none; }
 </style>
 
@@ -1531,7 +1544,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
         '<div class="row"><button class="btn ghost" type="button" data-a="byx">Batal</button>' +
         '<button class="btn" type="button" data-a="byn">' + (l === 3 ? 'Tampilkan nomor' : 'Lanjut') + '</button></div><p id="bymsg" class="err"></p>';
     } else {
-      h += info + '<div class="kv"><span>Nomor ' + esc(BAYAR.dompet) + '</span><b class="mono" style="font-size:1.15rem;word-break:break-all">' + esc(BAYAR.nomor) + '</b></div>' +
+      h += info + '<div class="kv"><span>Nomor ' + esc(BAYAR.dompet) + '</span><b class="mono" style="font-size: calc(1.15rem * var(--fz, 1));word-break:break-all">' + esc(BAYAR.nomor) + '</b></div>' +
         '<div class="row"><button class="btn" type="button" data-a="bys">Salin nomor</button><button class="btn ghost" type="button" data-a="byx">Sembunyikan</button></div>' +
         '<p class="sm">Setelah transfer: simpan screenshot bukti dan konfirmasi langsung ke bendahara.</p>';
     }
@@ -2691,6 +2704,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
   function applyTema() {
     var ui = uiAktif();
     document.documentElement.setAttribute('data-ui', ui);
+    if (window.kkFont) window.kkFont(ui);
     var tm = lsGet('kk-tema');
     if (TEMA.indexOf(tm) === -1) tm = 'auto';
     var kunci = uiKunci(ui);
@@ -2893,7 +2907,7 @@ th { font-size: .72rem; color: var(--muted); text-transform: uppercase; border-t
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.2</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.3</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
