@@ -32,6 +32,7 @@ window.kkFont(_g); } catch (e) {}</script>
   --warn: #8A6100; --warn-soft: #FBF0D0;
   --font-main: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
+  --pill-transition: left .3s cubic-bezier(.25, 1, .5, 1), width .3s cubic-bezier(.25, 1, .5, 1), transform .3s cubic-bezier(.25, 1, .5, 1); /* karakter gerak kapsul tab */
   --fz: 1; /* pengali ukuran teks per gaya (pixel 0.85, hand-drawn 1.1) */
   --fd: var(--font-main); --fb: var(--font-main); --fm: var(--font-mono);
 }
@@ -208,6 +209,11 @@ textarea { min-height: 110px; resize: vertical; }
 .btn:disabled { opacity: .6; cursor: default; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 .seg[hidden] { display: none; }
+/* Kapsul penanda tab universal (JS mengisi .lens; gayanya disalin dari tab aktif tema) */
+.pill { position: relative; touch-action: pan-y; }
+.pill button { position: relative; z-index: 1; background: none !important; border-color: transparent !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; filter: none !important; transition: color .2s; }
+.lens { position: absolute; z-index: 0; pointer-events: none; box-sizing: border-box; transition: var(--pill-transition); will-change: left, width, transform; }
+@media (prefers-reduced-motion: reduce) { :root { --pill-transition: none !important; } }
 .seg button { height: 34px; border: 0; border-radius: 7px; background: none; color: var(--muted); font-weight: 600; font-size: calc(.85rem * var(--fz, 1)); cursor: pointer; }
 .seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
 .pen { display: flex; justify-content: flex-end; }
@@ -356,11 +362,9 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 :root[data-ui="glassmorphism"] .card, :root[data-ui="glassmorphism"] nav, :root[data-ui="glassmorphism"] .seg, :root[data-ui="glassmorphism"] .smenu, :root[data-ui="glassmorphism"] .alert { -webkit-backdrop-filter: blur(22px) saturate(125%); backdrop-filter: blur(22px) saturate(125%); }
 :root[data-ui="glassmorphism"] .card:has(.big), :root[data-ui="glassmorphism"] .card:has(.track) { background: rgba(255, 255, 255, .22); }
 :root[data-ui="glassmorphism"] .grid > div { background: rgba(10, 16, 24, .28); border: 0; border-radius: 14px; padding: 10px 12px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
-:root[data-ui="glassmorphism"] nav, :root[data-ui="glassmorphism"] .seg { position: relative; touch-action: pan-y; }
-:root[data-ui="glassmorphism"] nav button, :root[data-ui="glassmorphism"] .seg button { position: relative; z-index: 1; transition: color .25s; }
 :root[data-ui="glassmorphism"] nav button[aria-pressed=true], :root[data-ui="glassmorphism"] .seg button[aria-pressed=true] { background: none; color: #fff; box-shadow: none; }
 /* penanda tab kaca: buram solid, tenang, tanpa efek membal */
-:root[data-ui="glassmorphism"] .lens { position: absolute; z-index: 0; pointer-events: none; background: rgba(255, 255, 255, .26); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 2px 8px rgba(0, 0, 0, .18); will-change: left, width; }
+:root[data-ui="glassmorphism"] .lens { background: rgba(255, 255, 255, .26); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 2px 8px rgba(0, 0, 0, .18); }
 :root[data-ui="glassmorphism"] input, :root[data-ui="glassmorphism"] select, :root[data-ui="glassmorphism"] textarea, :root[data-ui="glassmorphism"] .selbtn { box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3); }
 :root[data-ui="glassmorphism"] .track { background: rgba(10, 16, 24, .38); border-color: rgba(255, 255, 255, .15); }
 :root[data-ui="glassmorphism"] .track > i { background: linear-gradient(90deg, #6BB3FF, #8CF0BF); }
@@ -390,8 +394,10 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 }
 :root[data-ui="liquid-glass"] nav button, :root[data-ui="liquid-glass"] .seg button { position: relative; z-index: 1; border-radius: 999px; background: none; transition: color .3s; }
 :root[data-ui="liquid-glass"] nav button[aria-pressed=true], :root[data-ui="liquid-glass"] .seg button[aria-pressed=true] { background: none; color: #fff; }
+:root[data-ui="liquid-glass"] { --pill-transition: left .55s cubic-bezier(.34, 1.56, .64, 1), width .55s cubic-bezier(.34, 1.56, .64, 1), transform .55s cubic-bezier(.34, 1.56, .64, 1); }
+:root[data-ui="liquid-glass"] .lens::after { content: ""; position: absolute; left: 12%; right: 12%; top: 2px; height: 38%; border-radius: 999px; background: linear-gradient(180deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0)); }
 :root[data-ui="liquid-glass"] .lens {
-  position: absolute; z-index: 0; pointer-events: none; border-radius: 999px; will-change: left, width, transform;
+  border-radius: 999px;
   background: linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .08));
   -webkit-backdrop-filter: blur(3px) saturate(200%) brightness(1.3); backdrop-filter: blur(3px) saturate(200%) brightness(1.3);
   box-shadow: inset 1.5px 1.5px 1px rgba(255, 255, 255, .75), inset -1px -1px 1px rgba(255, 255, 255, .30), inset 0 0 16px rgba(255, 255, 255, .22), 0 6px 18px rgba(0, 0, 0, .38);
@@ -648,6 +654,9 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 :root[data-ui="hand-drawn"] body { background-size: 14px 14px; }
 :root[data-ui="hand-drawn"] .card { padding: 18px 20px; }
 :root[data-ui="hand-drawn"] input, :root[data-ui="hand-drawn"] select, :root[data-ui="hand-drawn"] textarea, :root[data-ui="hand-drawn"] .selbtn, :root[data-ui="hand-drawn"] .btn.ghost { border: 2px solid #2B2B2B; }
+
+/* -- Gerak kapsul tab: retro = tegas & kaku -- */
+:root[data-ui="terminal"], :root[data-ui="pixel-art"], :root[data-ui="brutalist"] { --pill-transition: left .1s linear, width .1s linear, transform .1s linear; }
 
 /* -- Tipografi per gaya UI: --font-main (teks) dan --font-mono (angka/label) -- */
 :root[data-ui="material-you"] { --font-main: "Outfit", system-ui, sans-serif; }
@@ -1272,67 +1281,89 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   /* =========================================================
    * Tab & render utama
    * ========================================================= */
-  /* ----- Penanda tab (.lens) untuk Liquid Glass & Glassmorphism -----
-     Liquid Glass: kenyal (overshoot), melar saat meluncur/digeser, kilau di tepi.
-     Glassmorphism: tenang & presisi, tanpa membal/melar. */
-  var LENS = {};
-  var EASE_CAIR = 'cubic-bezier(.3, 1.25, .5, 1)', EASE_KACA = 'cubic-bezier(.25, 1, .5, 1)';
-  function lensGaya() {
-    var u = document.documentElement.getAttribute('data-ui');
-    return u === 'liquid-glass' || u === 'glassmorphism' ? u : '';
-  }
-  function lensKan(key, el) {
+  /* ----- Kapsul penanda tab universal (.lens): semua tema, semua grup tab -----
+     Satu mekanisme untuk klik, geser jari, dan ubah ukuran layar. Elemen kapsul dipertahankan antar
+     render (nav/modebar menulis ulang isinya), jadi gerakannya pakai CSS transition (--pill-transition)
+     dari posisi terakhir. Gaya kapsul disalin dari tab aktif milik tema (border, bayangan, tekstur). */
+  var PILL = {};
+  var PILL_EL = { nav: '#nav', seg: '#modebar' };
+  var SALIN = ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
+    'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+    'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle',
+    'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+    'borderRadius', 'boxShadow', 'backdropFilter', 'webkitBackdropFilter', 'filter'];
+  function pillUI() { return document.documentElement.getAttribute('data-ui') || ''; }
+  function pillCair() { return pillUI() === 'liquid-glass'; }
+  function pillKan(key, el, snap, coba) {
     if (!el || el.hidden) return;
-    var ui = lensGaya();
-    if (!ui) { delete LENS[key]; return; }
+    if (!el.offsetWidth) {          /* kontainer belum tampil (mis. layar belum siap): coba lagi sebentar */
+      if ((coba || 0) < 12) setTimeout(function () { pillKan(key, $(PILL_EL[key]), true, (coba || 0) + 1); }, 80);
+      return;
+    }
     var b = el.querySelector('button[aria-pressed="true"]');
     if (!b) return;
-    var kaca = ui === 'glassmorphism';
-    var l = document.createElement('i');
-    l.className = 'lens';
-    el.appendChild(l);
-    var x = b.offsetLeft, w = b.offsetWidth;
-    l.style.cssText = 'top:' + b.offsetTop + 'px;height:' + b.offsetHeight + 'px;left:' + x + 'px;width:' + w + 'px';
-    if (kaca) l.style.borderRadius = getComputedStyle(b).borderRadius;
-    var p = LENS[key];
-    LENS[key] = { x: x, w: w, t: '' };
-    var diam = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!p || p.x === x && p.w === w || !l.animate || diam) return;
-    if (kaca) {
-      l.animate([{ left: p.x + 'px', width: p.w + 'px' }, { left: x + 'px', width: w + 'px' }], { duration: 380, easing: EASE_KACA });
+    var ui = pillUI(), P = PILL[key] || (PILL[key] = {});
+    var baru = !P.l || P.ui !== ui;
+    if (baru) { P.l = document.createElement('i'); P.l.className = 'lens'; P.ui = ui; }
+    var l = P.l;
+    if (l.parentNode !== el) el.appendChild(l);
+    /* salin gaya tab aktif dari tema (tema kaca punya gaya kapsul sendiri di CSS) */
+    var bs = el.querySelectorAll('button'), k;
+    for (k = 0; k < bs.length; k++) bs[k].style.transition = 'none';
+    if (ui !== 'liquid-glass' && ui !== 'glassmorphism') {
+      el.classList.remove('pill');
+      var cs = getComputedStyle(b);
+      for (k = 0; k < SALIN.length; k++) l.style[SALIN[k]] = cs[SALIN[k]];
     } else {
-      var a = Math.min(p.x, x), z = Math.max(p.x + p.w, x + w);
-      l.animate([
-        { left: p.x + 'px', width: p.w + 'px', transform: p.t || 'scale(1)' },
-        { left: a + 'px', width: (z - a) + 'px', transform: 'scale(1.04, 1.14)', offset: .45 },
-        { left: x + 'px', width: w + 'px', transform: 'scale(1)' }
-      ], { duration: 560, easing: EASE_CAIR });
+      l.style.borderRadius = ui === 'glassmorphism' ? getComputedStyle(b).borderRadius : '';
     }
+    el.classList.add('pill');
+    getComputedStyle(b).color;
+    for (k = 0; k < bs.length; k++) bs[k].style.transition = '';
+    var x = b.offsetLeft + 'px', w = b.offsetWidth + 'px';
+    l.style.top = b.offsetTop + 'px'; l.style.height = b.offsetHeight + 'px';
+    var tok = P.tok = (P.tok || 0) + 1;
+    if (baru || snap) {            /* posisi langsung, tanpa animasi (render pertama, ganti tema, ukuran layar berubah) */
+      l.style.transition = 'none'; l.style.left = x; l.style.width = w; l.style.transform = '';
+      void l.offsetWidth; l.style.transition = '';
+      return;
+    }
+    if (l.style.left === x && l.style.width === w && !l.style.transform) return;
+    void l.offsetWidth;            /* kunci posisi awal (posisi jari bila baru dilepas) sebelum bergerak */
+    requestAnimationFrame(function () {
+      if (P.tok !== tok) return;
+      l.style.transition = '';     /* aktifkan lagi CSS transition, lalu pindah ke tab tujuan */
+      l.style.left = x; l.style.width = w;
+      if (pillCair()) {
+        l.style.transform = 'scale(1.06, 1.14)';
+        setTimeout(function () { if (P.tok === tok) l.style.transform = ''; }, 200);
+      } else l.style.transform = '';
+    });
   }
-  /** Geser penanda dengan jari. Saat dilepas, animasi pindah ke tab terdekat dimulai
-      dari posisi jari (bukan dari tab lama), jadi tidak ada lompatan balik. */
+  function lensKan(key, el) { pillKan(key, el, false); }
+  /** Pasang geser-jari pada satu kontainer tab. Dipakai semua grup tab. */
   function lensGeser(sel, key) {
     var el = $(sel), st = null;
     if (!el) return;
     el.addEventListener('pointerdown', function (e) {
-      var l = el.querySelector('.lens');
-      if (!lensGaya() || !l) return;
-      st = { x0: e.clientX, l: l, left0: l.offsetLeft, drag: false };
+      var P = PILL[key];
+      if (!P || !P.l || P.l.parentNode !== el) return;
+      st = { x0: e.clientX, t0: e.timeStamp, xl: e.clientX, v: 0, l: P.l, left0: P.l.offsetLeft, drag: false };
     });
     el.addEventListener('pointermove', function (e) {
       if (!st) return;
-      var dx = e.clientX - st.x0;
+      var dx = e.clientX - st.x0, dt = Math.max(1, e.timeStamp - st.t0);
       if (!st.drag && Math.abs(dx) > 8) {
         st.drag = true;
         try { el.setPointerCapture(e.pointerId); } catch (x) {}
-        if (st.l.getAnimations) st.l.getAnimations().forEach(function (a) { a.cancel(); });
-        st.l.style.transition = 'none';
+        st.l.style.transition = 'none';        /* ikut jari tanpa tertinggal */
       }
       if (st.drag) {
         var bs = el.querySelectorAll('button'), first = bs[0], last = bs[bs.length - 1];
         var max = last.offsetLeft + last.offsetWidth - st.l.offsetWidth;
         st.l.style.left = Math.max(first.offsetLeft, Math.min(max, st.left0 + dx)) + 'px';
-        if (lensGaya() === 'liquid-glass') st.l.style.transform = 'scale(1.08, 1.14)';
+        st.v = (e.clientX - st.xl) / Math.max(1, e.timeStamp - (st.tl || st.t0)); st.xl = e.clientX; st.tl = e.timeStamp;
+        if (pillCair()) st.l.style.transform = 'scale(' + (1.06 + Math.min(.14, Math.abs(st.v) * .08)).toFixed(3) + ', 1.14)';
       }
     });
     function selesai() {
@@ -1345,23 +1376,28 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
         if (m < d) { d = m; best = b; }
       });
       if (!best) return;
-      var kaca = lensGaya() === 'glassmorphism';
-      if (best.getAttribute('aria-pressed') !== 'true') {
-        /* simpan posisi jari terakhir sebagai titik awal; render ulang akan menganimasikan dari sini */
-        LENS[key] = { x: l.offsetLeft, w: l.offsetWidth, t: l.style.transform || '' };
-        best.click();
-      } else {
-        /* kembali ke tab yang sama: aktifkan lagi transition, lalu gerakkan di frame berikutnya */
-        var ez = kaca ? EASE_KACA : EASE_CAIR, dur = kaca ? '.38s' : '.5s';
-        l.style.transition = 'left ' + dur + ' ' + ez + ', width ' + dur + ' ' + ez + ', transform ' + dur + ' ' + ez;
-        requestAnimationFrame(function () {
-          l.style.left = best.offsetLeft + 'px'; l.style.width = best.offsetWidth + 'px'; l.style.transform = '';
-          setTimeout(function () { l.style.transition = ''; }, 600);
-        });
-      }
+      /* jangan hapus style posisi jari: kapsul bergerak dari sana ke tab tujuan */
+      l.style.transition = '';
+      if (best.getAttribute('aria-pressed') !== 'true') best.click();   /* render ulang memanggil pillKan */
+      else pillKan(key, el, false);
     }
     el.addEventListener('pointerup', selesai);
     el.addEventListener('pointercancel', selesai);
+  }
+  /** Sesuaikan ulang tanpa animasi saat ukuran layar/font/tema berubah. */
+  var pillAntri = 0;
+  function pillSegarkan() {
+    if (pillAntri) return;
+    pillAntri = requestAnimationFrame(function () {
+      pillAntri = 0;
+      Object.keys(PILL_EL).forEach(function (k) { pillKan(k, $(PILL_EL[k]), true); });
+    });
+  }
+  window.addEventListener('resize', pillSegarkan);
+  window.addEventListener('orientationchange', pillSegarkan);
+  if (document.fonts) {
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', pillSegarkan);
+    if (document.fonts.ready) document.fonts.ready.then(pillSegarkan);
   }
 
   function renderNav() {
@@ -2736,6 +2772,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     var ui = uiAktif();
     document.documentElement.setAttribute('data-ui', ui);
     if (window.kkFont) window.kkFont(ui);
+    if (typeof pillSegarkan === 'function') pillSegarkan();
     var tm = lsGet('kk-tema');
     if (TEMA.indexOf(tm) === -1) tm = 'auto';
     var kunci = uiKunci(ui);
@@ -2938,7 +2975,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.4</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.5</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
