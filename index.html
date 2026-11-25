@@ -356,7 +356,11 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 :root[data-ui="glassmorphism"] .card, :root[data-ui="glassmorphism"] nav, :root[data-ui="glassmorphism"] .seg, :root[data-ui="glassmorphism"] .smenu, :root[data-ui="glassmorphism"] .alert { -webkit-backdrop-filter: blur(22px) saturate(125%); backdrop-filter: blur(22px) saturate(125%); }
 :root[data-ui="glassmorphism"] .card:has(.big), :root[data-ui="glassmorphism"] .card:has(.track) { background: rgba(255, 255, 255, .22); }
 :root[data-ui="glassmorphism"] .grid > div { background: rgba(10, 16, 24, .28); border: 0; border-radius: 14px; padding: 10px 12px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
-:root[data-ui="glassmorphism"] nav button[aria-pressed=true], :root[data-ui="glassmorphism"] .seg button[aria-pressed=true] { background: rgba(255, 255, 255, .26); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+:root[data-ui="glassmorphism"] nav, :root[data-ui="glassmorphism"] .seg { position: relative; touch-action: pan-y; }
+:root[data-ui="glassmorphism"] nav button, :root[data-ui="glassmorphism"] .seg button { position: relative; z-index: 1; transition: color .25s; }
+:root[data-ui="glassmorphism"] nav button[aria-pressed=true], :root[data-ui="glassmorphism"] .seg button[aria-pressed=true] { background: none; color: #fff; box-shadow: none; }
+/* penanda tab kaca: buram solid, tenang, tanpa efek membal */
+:root[data-ui="glassmorphism"] .lens { position: absolute; z-index: 0; pointer-events: none; background: rgba(255, 255, 255, .26); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 2px 8px rgba(0, 0, 0, .18); will-change: left, width; }
 :root[data-ui="glassmorphism"] input, :root[data-ui="glassmorphism"] select, :root[data-ui="glassmorphism"] textarea, :root[data-ui="glassmorphism"] .selbtn { box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3); }
 :root[data-ui="glassmorphism"] .track { background: rgba(10, 16, 24, .38); border-color: rgba(255, 255, 255, .15); }
 :root[data-ui="glassmorphism"] .track > i { background: linear-gradient(90deg, #6BB3FF, #8CF0BF); }
@@ -1268,37 +1272,51 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   /* =========================================================
    * Tab & render utama
    * ========================================================= */
-  /* ----- Liquid Glass: gelembung lensa penanda tab yang meluncur dan memanjang ----- */
+  /* ----- Penanda tab (.lens) untuk Liquid Glass & Glassmorphism -----
+     Liquid Glass: kenyal (overshoot), melar saat meluncur/digeser, kilau di tepi.
+     Glassmorphism: tenang & presisi, tanpa membal/melar. */
   var LENS = {};
+  var EASE_CAIR = 'cubic-bezier(.3, 1.25, .5, 1)', EASE_KACA = 'cubic-bezier(.25, 1, .5, 1)';
+  function lensGaya() {
+    var u = document.documentElement.getAttribute('data-ui');
+    return u === 'liquid-glass' || u === 'glassmorphism' ? u : '';
+  }
   function lensKan(key, el) {
     if (!el || el.hidden) return;
-    if (document.documentElement.getAttribute('data-ui') !== 'liquid-glass') { delete LENS[key]; return; }
+    var ui = lensGaya();
+    if (!ui) { delete LENS[key]; return; }
     var b = el.querySelector('button[aria-pressed="true"]');
     if (!b) return;
+    var kaca = ui === 'glassmorphism';
     var l = document.createElement('i');
     l.className = 'lens';
     el.appendChild(l);
     var x = b.offsetLeft, w = b.offsetWidth;
     l.style.cssText = 'top:' + b.offsetTop + 'px;height:' + b.offsetHeight + 'px;left:' + x + 'px;width:' + w + 'px';
+    if (kaca) l.style.borderRadius = getComputedStyle(b).borderRadius;
     var p = LENS[key];
-    LENS[key] = { x: x, w: w };
+    LENS[key] = { x: x, w: w, t: '' };
     var diam = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (p && p.x !== x && l.animate && !diam) {
+    if (!p || p.x === x && p.w === w || !l.animate || diam) return;
+    if (kaca) {
+      l.animate([{ left: p.x + 'px', width: p.w + 'px' }, { left: x + 'px', width: w + 'px' }], { duration: 380, easing: EASE_KACA });
+    } else {
       var a = Math.min(p.x, x), z = Math.max(p.x + p.w, x + w);
       l.animate([
-        { left: p.x + 'px', width: p.w + 'px', transform: 'scale(1)' },
+        { left: p.x + 'px', width: p.w + 'px', transform: p.t || 'scale(1)' },
         { left: a + 'px', width: (z - a) + 'px', transform: 'scale(1.04, 1.14)', offset: .45 },
         { left: x + 'px', width: w + 'px', transform: 'scale(1)' }
-      ], { duration: 560, easing: 'cubic-bezier(.3, 1.25, .5, 1)' });
+      ], { duration: 560, easing: EASE_CAIR });
     }
   }
-  /** Geser gelembung dengan jari; saat dilepas, pindah ke tab terdekat. */
-  function lensGeser(sel) {
+  /** Geser penanda dengan jari. Saat dilepas, animasi pindah ke tab terdekat dimulai
+      dari posisi jari (bukan dari tab lama), jadi tidak ada lompatan balik. */
+  function lensGeser(sel, key) {
     var el = $(sel), st = null;
     if (!el) return;
     el.addEventListener('pointerdown', function (e) {
       var l = el.querySelector('.lens');
-      if (document.documentElement.getAttribute('data-ui') !== 'liquid-glass' || !l) return;
+      if (!lensGaya() || !l) return;
       st = { x0: e.clientX, l: l, left0: l.offsetLeft, drag: false };
     });
     el.addEventListener('pointermove', function (e) {
@@ -1308,26 +1326,39 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
         st.drag = true;
         try { el.setPointerCapture(e.pointerId); } catch (x) {}
         if (st.l.getAnimations) st.l.getAnimations().forEach(function (a) { a.cancel(); });
+        st.l.style.transition = 'none';
       }
       if (st.drag) {
         var bs = el.querySelectorAll('button'), first = bs[0], last = bs[bs.length - 1];
         var max = last.offsetLeft + last.offsetWidth - st.l.offsetWidth;
         st.l.style.left = Math.max(first.offsetLeft, Math.min(max, st.left0 + dx)) + 'px';
-        st.l.style.transform = 'scale(1.08, 1.14)';
+        if (lensGaya() === 'liquid-glass') st.l.style.transform = 'scale(1.08, 1.14)';
       }
     });
     function selesai() {
       if (!st) return;
       var s0 = st; st = null;
       if (!s0.drag) return;
-      var c = s0.l.offsetLeft + s0.l.offsetWidth / 2, best = null, d = 1e9;
+      var l = s0.l, c = l.offsetLeft + l.offsetWidth / 2, best = null, d = 1e9;
       el.querySelectorAll('button').forEach(function (b) {
         var m = Math.abs(b.offsetLeft + b.offsetWidth / 2 - c);
         if (m < d) { d = m; best = b; }
       });
-      s0.l.style.transform = '';
-      if (best && best.getAttribute('aria-pressed') !== 'true') best.click();
-      else if (best) { s0.l.style.left = best.offsetLeft + 'px'; }
+      if (!best) return;
+      var kaca = lensGaya() === 'glassmorphism';
+      if (best.getAttribute('aria-pressed') !== 'true') {
+        /* simpan posisi jari terakhir sebagai titik awal; render ulang akan menganimasikan dari sini */
+        LENS[key] = { x: l.offsetLeft, w: l.offsetWidth, t: l.style.transform || '' };
+        best.click();
+      } else {
+        /* kembali ke tab yang sama: aktifkan lagi transition, lalu gerakkan di frame berikutnya */
+        var ez = kaca ? EASE_KACA : EASE_CAIR, dur = kaca ? '.38s' : '.5s';
+        l.style.transition = 'left ' + dur + ' ' + ez + ', width ' + dur + ' ' + ez + ', transform ' + dur + ' ' + ez;
+        requestAnimationFrame(function () {
+          l.style.left = best.offsetLeft + 'px'; l.style.width = best.offsetWidth + 'px'; l.style.transform = '';
+          setTimeout(function () { l.style.transition = ''; }, 600);
+        });
+      }
     }
     el.addEventListener('pointerup', selesai);
     el.addEventListener('pointercancel', selesai);
@@ -2907,7 +2938,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.3</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.4</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -3255,7 +3286,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 
   function init() {
     applyTema();
-    lensGeser('#nav'); lensGeser('#modebar');
+    lensGeser('#nav', 'nav'); lensGeser('#modebar', 'seg');
     applyUkuran();
     renderNav();
     $('#view').innerHTML = '<p class="sm">Memuat…</p>';
