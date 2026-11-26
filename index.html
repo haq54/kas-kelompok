@@ -33,6 +33,7 @@ window.kkFont(_g); } catch (e) {}</script>
   --font-main: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
   --pill-transition: left .3s cubic-bezier(.25, 1, .5, 1), width .3s cubic-bezier(.25, 1, .5, 1), transform .3s cubic-bezier(.25, 1, .5, 1); /* karakter gerak kapsul tab */
+  --pg-dur: 220ms; /* durasi transisi halaman */
   --fz: 1; /* pengali ukuran teks per gaya (pixel 0.85, hand-drawn 1.1) */
   --fd: var(--font-main); --fb: var(--font-main); --fm: var(--font-mono);
 }
@@ -212,8 +213,15 @@ textarea { min-height: 110px; resize: vertical; }
 /* Kapsul penanda tab universal (JS mengisi .lens; gayanya disalin dari tab aktif tema) */
 .pill { position: relative; touch-action: pan-y; }
 .pill button { position: relative; z-index: 1; background: none !important; border-color: transparent !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; filter: none !important; transition: color .2s; }
+/* Transisi perpindahan halaman Pengaturan: geser + pudar (hanya transform & opacity) */
+@keyframes pgF { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pgB { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+/* konten yang bergeser ditahan (clip + margin 14px = lebar bantalan body) agar tidak pernah memicu scroll horizontal */
+#view.pg-f, #view.pg-b { overflow-x: clip; overflow-clip-margin: 14px; }
+#view.pg-f > * { animation: pgF var(--pg-dur, 220ms) cubic-bezier(.25, 1, .5, 1); }
+#view.pg-b > * { animation: pgB var(--pg-dur, 220ms) cubic-bezier(.25, 1, .5, 1); }
 .lens { position: absolute; z-index: 0; pointer-events: none; box-sizing: border-box; transition: var(--pill-transition); will-change: left, width, transform; }
-@media (prefers-reduced-motion: reduce) { :root { --pill-transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { :root { --pill-transition: none !important; --pg-dur: 1ms !important; } }
 .seg button { height: 34px; border: 0; border-radius: 7px; background: none; color: var(--muted); font-weight: 600; font-size: calc(.85rem * var(--fz, 1)); cursor: pointer; }
 .seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
 .pen { display: flex; justify-content: flex-end; }
@@ -656,7 +664,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 :root[data-ui="hand-drawn"] input, :root[data-ui="hand-drawn"] select, :root[data-ui="hand-drawn"] textarea, :root[data-ui="hand-drawn"] .selbtn, :root[data-ui="hand-drawn"] .btn.ghost { border: 2px solid #2B2B2B; }
 
 /* -- Gerak kapsul tab: retro = tegas & kaku -- */
-:root[data-ui="terminal"], :root[data-ui="pixel-art"], :root[data-ui="brutalist"] { --pill-transition: left .1s linear, width .1s linear, transform .1s linear; }
+:root[data-ui="terminal"], :root[data-ui="pixel-art"], :root[data-ui="brutalist"] { --pill-transition: left .1s linear, width .1s linear, transform .1s linear; --pg-dur: 80ms; }
 
 /* -- Tipografi per gaya UI: --font-main (teks) dan --font-mono (angka/label) -- */
 :root[data-ui="material-you"] { --font-main: "Outfit", system-ui, sans-serif; }
@@ -1692,7 +1700,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   /** Semua aksi tombol & ketukan baris di dalam #view. */
   $('#view').addEventListener('click', function (e) {
     var g = e.target.closest('[data-go]');
-    if (g) { sub = g.dataset.go; PV = []; fSet(); window.scrollTo(0, 0); return; }
+    if (g) { pgGeser('f', function () { sub = g.dataset.go; PV = []; fSet(); }); return; }
 
     var b = e.target.closest('button[data-a], button[data-t], button[data-u], button[data-lf], button[data-kat], button[data-ui]');
 
@@ -1706,8 +1714,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 
     // aksi yang boleh dipakai siapa saja
     if (a === 'sback') {
-      if (sub) { sub = KELOLA_ISI.indexOf(sub) > -1 ? 'kelola' : ''; fSet(); } else { tab = prevTab; show(); }
-      window.scrollTo(0, 0);
+      pgGeser('b', function () { if (sub) { sub = KELOLA_ISI.indexOf(sub) > -1 ? 'kelola' : ''; fSet(); } else { tab = prevTab; show(); } });
       return;
     }
     if (a === 'in') { bukaLogin(); return; }
@@ -2793,11 +2800,26 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     return u;
   }
 
+  /** Jalankan perpindahan halaman Pengaturan dengan animasi: arah 'f' (maju, masuk dari kanan) atau 'b' (kembali, masuk dari kiri). */
+  var pgTimer = 0;
+  function pgGeser(arah, ubah) {
+    var v = $('#view');
+    window.scrollTo(0, 0);
+    ubah();
+    window.scrollTo(0, 0);
+    if (!v) return;
+    v.classList.remove('pg-f', 'pg-b');
+    void v.offsetWidth;                       /* mulai ulang animasi bila diklik cepat */
+    v.classList.add(arah === 'b' ? 'pg-b' : 'pg-f');
+    clearTimeout(pgTimer);
+    var selesai = function () { v.classList.remove('pg-f', 'pg-b'); };
+    v.onanimationend = selesai;
+    pgTimer = setTimeout(selesai, 500);
+  }
+
   function openSet(s) {
     if (tab !== 'set') prevTab = tab;
-    tab = 'set'; sub = s || ''; ed = null; PV = []; pengingat = '';
-    show();
-    window.scrollTo(0, 0);
+    pgGeser('f', function () { tab = 'set'; sub = s || ''; ed = null; PV = []; pengingat = ''; show(); });
   }
 
   function menuSet(it) {
@@ -2986,7 +3008,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.6</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.7</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
