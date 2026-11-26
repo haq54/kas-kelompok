@@ -156,6 +156,9 @@ body, input, select, textarea, button { font-variant-numeric: tabular-nums; }
 
 .alert { background: var(--warn-soft); color: var(--warn); border-radius: var(--rf); padding: 10px 12px; font-size: calc(.9rem * var(--fz, 1)); font-weight: 500; }
 .alert.red { background: var(--out-soft); color: var(--out); }
+.alert[data-ibal] { cursor: pointer; }
+.alert[data-ibal]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+#ibpes { scroll-margin-top: 12px; }
 .alert.green { background: var(--in-soft); color: var(--in); }
 
 input, select, textarea {
@@ -1697,8 +1700,21 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     return h + '</div>';
   }
 
+  $('#view').addEventListener('keydown', function (e) {
+    var al = e.target.closest && e.target.closest('.alert[data-ibal]');
+    if (al && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); al.click(); }
+  });
   /** Semua aksi tombol & ketukan baris di dalam #view. */
   $('#view').addEventListener('click', function (e) {
+    var al = e.target.closest('.alert[data-ibal]');
+    if (al) {
+      if (al.dataset.ibal === 'buka') { iSel = al.dataset.id; fill(); window.scrollTo(0, 0); }
+      else {
+        var tp = $('#ibpes'), kg = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (tp) tp.scrollIntoView({ behavior: kg ? 'auto' : 'smooth', block: 'start' });
+      }
+      return;
+    }
     var g = e.target.closest('[data-go]');
     if (g) { pgGeser('f', function () { sub = g.dataset.go; PV = []; fSet(); }); return; }
 
@@ -2377,6 +2393,35 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     ({ home: fHomeI, anggota: fAnggotaI, catat: fCatatI, laporan: fLaporanI })[tab]();
   }
 
+  /* ---- Peringatan tenggat (soft deadline: iuran TIDAK ditutup otomatis; bendahara tetap bisa mencatat sampai menekan Tutup iuran) ---- */
+  function hariTenggat(i) {
+    return Math.round((new Date(i.tenggat + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5);
+  }
+  function waktuTenggat(d) { return d > 0 ? d + ' hari lagi' : (d === 0 ? 'hari ini' : 'lewat tenggat ' + (-d) + ' hari'); }
+  /** Iuran berjalan bernominal tetap yang tenggatnya H-7 sampai lewat dan masih ada peserta belum lunas; selain itu null. */
+  function mendesakI(i) {
+    if (i.tutup || !(i.per > 0) || !i.tenggat) return null;
+    var d = hariTenggat(i);
+    if (isNaN(d) || d > 7) return null;
+    var r = ringI(i), belum = r.n - r.lunas;
+    if (belum <= 0) return null;
+    return { i: i, d: d, belum: belum, kurang: sum(r.rows, function (x) { return Math.max(0, i.per - x.c); }) };
+  }
+  function bannerTenggatList() {
+    var L = IUR.map(mendesakI).filter(Boolean).sort(function (a, b) { return a.d - b.d || (b.i.ts || 0) - (a.i.ts || 0); });
+    if (!L.length) return '';
+    var lewat = L.filter(function (x) { return x.d < 0; }).length;
+    var judul = L.length + ' iuran ' + (lewat === L.length ? 'lewat tenggat' : (lewat ? 'mendekati atau lewat tenggat' : 'mendekati tenggat'));
+    return '<div class="alert red" role="button" tabindex="0" data-ibal="buka" data-id="' + L[0].i.id + '">' + judul +
+      ' &middot; ' + esc(L[0].i.nama) + ' (' + waktuTenggat(L[0].d) + '). Lihat detail.</div>';
+  }
+  function bannerTenggatDetail(i) {
+    var x = mendesakI(i);
+    if (!x) return '';
+    return '<div class="alert red" role="button" tabindex="0" data-ibal="peserta">' + x.belum + ' peserta belum lunas &middot; kurang ' + rp(x.kurang) +
+      ' &middot; ' + (x.d > 0 ? 'tenggat ' + x.d + ' hari lagi' : (x.d === 0 ? 'tenggat hari ini' : 'lewat tenggat ' + (-x.d) + ' hari')) + '.</div>';
+  }
+
   /* ---- Beranda ---- */
   function kartuIB(i) {
     var r = ringI(i), pct = r.target ? Math.min(100, Math.round(r.terkumpul / r.target * 100)) : 0;
@@ -2402,6 +2447,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
         '<span class="big mono">' + rp(sum(IP, jml)) + '</span>' +
         '<p class="sm">' + buka.length + ' iuran berjalan' + (tutup.length ? ' &middot; ' + tutup.length + ' ditutup' : '') +
           (IX.length ? ' &middot; keluar ' + rp(sum(IX, jml)) + ' &middot; sisa <b>' + rp(sum(IP, jml) - sum(IX, jml)) + '</b>' : '') + '</p></div>' +
+      bannerTenggatList() +
       (buka.map(kartuIB).join('') ||
         '<div class="card"><p class="sm">Belum ada iuran berjalan.' + (canEdit ? ' Buat di tab Catat.' : '') + '</p></div>') +
       (tutup.length ? '<h2 style="margin-top:6px">Iuran ditutup</h2>' + tutup.map(kartuIB).join('') : '') +
@@ -2447,10 +2493,11 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             '</div>'
           : '') +
       '</div>' +
+      bannerTenggatDetail(i) +
       '<div class="card"><h2>Rekap</h2><p class="sm">Bagikan atau simpan ringkasan iuran ini.</p>' +
         '<div class="row"><button class="btn ghost" type="button" data-a="ibr" data-id="' + i.id + '">Salin ringkasan</button>' +
         '<button class="btn ghost" type="button" data-a="ibu" data-id="' + i.id + '">Unduh rekap (CSV)</button></div></div>' +
-      '<div class="card"><h2>Peserta</h2>' + (peserta || '<p class="sm">Belum ada anggota.</p>') + '</div>' +
+      '<div class="card" id="ibpes"><h2>Peserta</h2>' + (peserta || '<p class="sm">Belum ada anggota.</p>') + '</div>' +
       '<div class="card"><h2>Pembayaran</h2>' + (bayar || '<p class="sm">Belum ada pembayaran.</p>') + '</div>' +
       '<div class="card"><h2>Pengeluaran</h2>' + (keluarList || '<p class="sm">Belum ada pengeluaran.' + (canEdit && !i.tutup ? ' Catat di tab Catat.' : '') + '</p>') + '</div>';
   }
@@ -3008,7 +3055,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.7</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.8</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
