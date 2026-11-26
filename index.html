@@ -1043,6 +1043,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     $('#role').className = 'badge' + (isDev ? ' dev' : '');
     if (!canEdit && tab === 'catat') tab = 'home';
     if (!canEdit && (sub === 'anggota' || sub === 'iuran' || sub === 'data')) sub = '';
+    if (!isHost && !canEdit && sub === 'kelola') sub = '';
     if (!isHost && (sub === 'pengurus' || sub === 'bayar' || sub === 'fitur')) sub = '';
     pengingat = '';
     show();
@@ -1705,7 +1706,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 
     // aksi yang boleh dipakai siapa saja
     if (a === 'sback') {
-      if (sub) { sub = ''; fSet(); } else { tab = prevTab; show(); }
+      if (sub) { sub = KELOLA_ISI.indexOf(sub) > -1 ? 'kelola' : ''; fSet(); } else { tab = prevTab; show(); }
       window.scrollTo(0, 0);
       return;
     }
@@ -2710,7 +2711,9 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   /* =========================================================
    * Pengaturan: daftar -> sub-halaman
    * ========================================================= */
-  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Nominal kas', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Cara bayar', fitur: 'Fitur room' };
+  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Nominal kas', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Cara bayar', fitur: 'Fitur room', kelola: 'Kelola room' };
+  /* halaman yang dibuka dari folder "Kelola room" (tombol Kembali menuju folder itu) */
+  var KELOLA_ISI = ['fitur', 'pengurus', 'bayar', 'anggota', 'iuran', 'data'];
   var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'];
   var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4' };
   var UKURAN = ['75', '88', '100', '118'];
@@ -2726,6 +2729,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     semua: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
     bayar: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h14a1 1 0 001-1v-9a1 1 0 00-1-1H5a2 2 0 01-2-2z"/><circle cx="16" cy="14.5" r="1"/></svg>',
     data: '<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>',
+    kelola: '<svg viewBox="0 0 24 24"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></svg>',
     fitur: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="5"/><circle cx="16" cy="12" r="2.5"/></svg>',
     pengurus: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>'
   };
@@ -2796,6 +2800,12 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     window.scrollTo(0, 0);
   }
 
+  function menuSet(it) {
+    return '<div class="smenu">' + it.map(function (x) {
+      return '<button type="button" data-go="' + x[0] + '">' + IC[x[0]] + '<span><b>' + x[1] + '</b><small>' + esc(x[2]) + '</small></span></button>';
+    }).join('') + '</div>';
+  }
+
   function fSet() {
     renderNav();
     if (!KODE) sub = 'room';
@@ -2806,20 +2816,21 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       var it = [['akun', 'Akun', u0 ? esc(u0.email || 'Sudah masuk') : 'Belum masuk'],
                 ['room', 'Room', KODE ? ((RNAMA || '') + ' · ' + KODE) : 'Masuk atau buat room']];
       if (isDev) it.push(['semua', 'Semua room', 'Khusus Dev: lihat dan masuk ke room mana pun']);
-      var ff = fitur();
-      if (isHost) it.push(['fitur', 'Fitur room', ff.kas && ff.iuran ? 'Kas dan ' + NAMA_IB : (ff.iuran ? NAMA_IB : 'Kas')]);
-      if (isHost) it.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
-      if (isHost) it.push(['bayar', 'Cara bayar', BAYAR && BAYAR.nomor ? BAYAR.dompet + ' \u00b7 sudah diatur' : 'Nomor dompet digital untuk kas']);
-      if (canEdit) {
-        it.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
-        if (ff.kas) it.push(['iuran', 'Nominal kas', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
-        it.push(['data', 'Data', 'Cadangan dan rekap kas']);
-      }
+      if (isHost || canEdit) it.push(['kelola', 'Kelola room', isHost ? 'Fitur, pengurus, cara bayar, anggota, dan data' : 'Anggota, nominal kas, dan data']);
       it.push(['tampilan', 'Tampilan', 'Gaya UI, tema warna, dan ukuran teks']);
       it.push(['tentang', 'Tentang', 'Versi dan privasi']);
-      h = '<div class="smenu">' + it.map(function (x) {
-        return '<button type="button" data-go="' + x[0] + '">' + IC[x[0]] + '<span><b>' + x[1] + '</b><small>' + esc(x[2]) + '</small></span></button>';
-      }).join('') + '</div>';
+      h = menuSet(it);
+    } else if (sub === 'kelola') {
+      var ff = fitur(), ik = [];
+      if (isHost) ik.push(['fitur', 'Fitur room', ff.kas && ff.iuran ? 'Kas dan ' + NAMA_IB : (ff.iuran ? NAMA_IB : 'Kas')]);
+      if (isHost) ik.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
+      if (isHost) ik.push(['bayar', 'Cara bayar', BAYAR && BAYAR.nomor ? BAYAR.dompet + ' \u00b7 sudah diatur' : 'Nomor dompet digital untuk kas']);
+      if (canEdit) {
+        ik.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
+        if (ff.kas) ik.push(['iuran', 'Nominal kas', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
+        ik.push(['data', 'Data', 'Cadangan dan rekap kas']);
+      }
+      h = menuSet(ik);
     } else if (sub === 'semua') {
       h = '<div class="card"><p class="sm">Semua room di Kaskita. Ketuk nama untuk masuk (mode lihat dulu; aktifkan edit di Beranda bila perlu). Semua tindakanmu tercatat.</p><div id="dvList"><p class="sm">Memuat…</p></div></div>' +
           '<div class="card"><h2>Pulihkan room</h2><p class="sm">Pilih file cadangan (.json) hasil Unduh cadangan.</p><input type="file" id="dvf" accept=".json,application/json"><div id="dvPv"></div></div>' +
@@ -2975,7 +2986,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.5</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.6</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
