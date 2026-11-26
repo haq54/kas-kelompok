@@ -1,4 +1,4 @@
-var V='kaskita-v28',SHELL=['./','index.html','manifest.json','icon_192x192.png','icon_512x512.png','icon_maskable_512x512.png','icon_monochrome_512x512.png'];
+var V='kaskita-v30',SHELL=['./','index.html','manifest.json','icon_192x192.png','icon_512x512.png','icon_maskable_512x512.png','icon_monochrome_512x512.png'];
 /* Tiap berkas dimasukkan sendiri-sendiri: satu berkas yang gagal tidak lagi membatalkan seluruh pemasangan. */
 self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(function(c){return Promise.all(SHELL.map(function(u){return c.add(u).catch(function(){})}))}).then(function(){return self.skipWaiting()}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n!==V}).map(function(n){return caches.delete(n)}))}).then(function(){return self.clients.claim()}))});

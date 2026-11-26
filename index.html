@@ -124,6 +124,10 @@ header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content:
   background: none; border: 1px solid var(--line); border-radius: 99px;
   padding: 2px 10px; cursor: pointer;
 }
+/* Badge peran: hanya informasi (bukan tombol) */
+#role { cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
+#gear[hidden] { display: none; }
+:root[data-ui="neobrutalism"] #role { box-shadow: none; }
 
 /* ===== Navigasi ===== */
 nav {
@@ -157,6 +161,25 @@ body, input, select, textarea, button { font-variant-numeric: tabular-nums; }
 .alert { background: var(--warn-soft); color: var(--warn); border-radius: var(--rf); padding: 10px 12px; font-size: calc(.9rem * var(--fz, 1)); font-weight: 500; }
 .alert.red { background: var(--out-soft); color: var(--out); }
 .alert[data-ibal] { cursor: pointer; }
+/* Menu titik tiga di kartu detail iuran */
+.ibmain { position: relative; z-index: 3; }
+.ibhd { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ibhd h2 { margin: 0; }
+.kwrap { position: relative; flex: none; margin: -4px -4px 0 0; }
+.kebab { width: 40px; height: 40px; display: grid; place-items: center; background: none; color: var(--muted); border: 1px solid transparent; border-radius: var(--rf); cursor: pointer; }
+.kebab:hover, .kebab[aria-expanded="true"] { color: var(--ink); border-color: var(--line); }
+.kmenu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 176px; display: flex; flex-direction: column; padding: 4px; background: var(--surface); border: var(--bw, 1px) solid var(--line); border-radius: var(--rf); box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+.kmenu[hidden] { display: none; }
+.kmenu button { min-height: 44px; padding: 0 14px; text-align: left; background: none; border: 0; border-radius: var(--rn, 8px); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+.kmenu button:hover { background: var(--field); }
+.kmenu button.del { color: var(--out); }
+/* gaya dengan permukaan tembus pandang: menu ⋮ dibuat solid agar tetap terbaca */
+:root[data-ui="glassmorphism"] .kmenu { background: #27303A; }
+:root[data-ui="liquid-glass"] .kmenu { background: #141B28; }
+:root[data-ui="aurora-gradient"] .kmenu { background: #101B2E; }
+:root[data-ui="aurora-terang"] .kmenu { background: #FFFFFF; }
+:root[data-ui="vaporwave"] .kmenu { background: #240A42; }
+:root[data-ui="neobrutalism"] .kmenu { box-shadow: 4px 4px 0 #0B0B0B; }
 .alert[data-ibal]:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 #ibpes { scroll-margin-top: 12px; }
 .alert.green { background: var(--in-soft); color: var(--in); }
@@ -698,6 +721,14 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 .uigaya .sw { display: block; width: 100%; height: 34px; border-radius: 8px; border: 1px solid rgba(128, 128, 128, .45); }
 .uigaya small { color: var(--muted); font-weight: 400; font-size: calc(.75rem * var(--fz, 1)); }
 .themes.kunci { opacity: .4; pointer-events: none; }
+/* Kartu iuran mendesak (tenggat H-7 / lewat, masih ada yang belum lunas): palet sama dengan banner tunggakan Kas (.alert.red) */
+:root[data-ui] .card.ibk.urg { background: var(--out-soft); color: var(--out); }
+:root[data-ui] .card.ibk.urg b, :root[data-ui] .card.ibk.urg .sm, :root[data-ui] .card.ibk.urg .sm b { color: var(--out); }
+:root[data-ui] .card.ibk.urg .tg { font-weight: 700; }
+:root[data-ui] .card.ibk.urg .track > i { background: var(--out); }
+/* penyesuaian kontras (>= 4,5) untuk dua gaya yang paletnya berbeda */
+:root[data-ui="bauhaus"] .card.ibk.urg { --out: #B01E1E; }
+:root[data-ui="glassmorphism"] .card.ibk.urg { background: rgba(120, 20, 30, .45); --out: #FFC9C4; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -711,7 +742,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     <h1 id="ttl">Kaskita</h1>
     <div class="hb">
       <button type="button" class="badge" id="gear">Pengaturan</button>
-      <button type="button" class="badge" id="role">Memuat…</button>
+      <span class="badge" id="role">Memuat…</span>
     </div>
   </header>
   <nav id="nav"></nav>
@@ -773,6 +804,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   var D = [];                        // anggota + hasil hitungan (derive)
   var FITUR = null, IUR = [], IP = [], IX = [];   // sakelar fitur (cfg/fitur), daftar iuran bersama, dan pembayarannya
   var IBMUAT = { iur: false, ipay: false, iexp: false };
+  var ibMenu = false;   // menu titik tiga di kartu detail iuran terbuka
   var iSel = '', edBuka = '', qPre = '';   // iuran yang dibuka, anggota yang form ubahnya terbuka, iuran terpilih di tab Catat
   var tab = 'home', sel = null, q = '';
   // urutan anggota diingat di perangkat ini: Anggota, Catat iuran, dan pengingat memakai urutan yang sama
@@ -1429,6 +1461,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 
   /** Bangun kerangka tab aktif, lalu isi datanya. */
   function show() {
+    $('#gear').hidden = tab === 'set' && !!KODE;   /* di layar Pengaturan, tombol Kembali sudah ada */
     renderNav();
     var v = $('#view');
 
@@ -1601,12 +1634,12 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       '</div>';
   }
 
-  /** Kartu "Cara bayar": nomor baru tampil setelah tiga lapis pengingat. */
+  /** Kartu "Metode bayar": nomor baru tampil setelah tiga lapis pengingat. */
   function kartuBayar() {
     if (!BAYAR || !BAYAR.nomor) {
-      return isHost ? '<div class="card c-bayar"><h2>Cara bayar</h2><p class="sm">Belum diatur. Atur di Pengaturan &gt; Cara bayar.</p></div>' : '';
+      return isHost ? '<div class="card c-bayar"><h2>Metode bayar</h2><p class="sm">Belum diatur. Atur di Pengaturan &gt; Kelola room &gt; Metode bayar.</p></div>' : '';
     }
-    var l = bayarLangkah, h = '<div class="card c-bayar"><h2>Cara bayar kas</h2>';
+    var l = bayarLangkah, h = '<div class="card c-bayar"><h2>Metode bayar</h2>';
     var info = '<p class="sm">Dompet digital: <b>' + esc(BAYAR.dompet) + '</b>' + (BAYAR.an ? ' \u00b7 a.n. ' + esc(BAYAR.an) : '') +
       '<br>Terakhir diubah ' + esc(lalu(BAYAR.ts)) + '</p>';
     var LANGKAH = [
@@ -1706,6 +1739,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   });
   /** Semua aksi tombol & ketukan baris di dalam #view. */
   $('#view').addEventListener('click', function (e) {
+    if (ibMenu && !e.target.closest('.kwrap')) tutupMenuIB();
     var al = e.target.closest('.alert[data-ibal]');
     if (al) {
       if (al.dataset.ibal === 'buka') { iSel = al.dataset.id; fill(); window.scrollTo(0, 0); }
@@ -1775,8 +1809,14 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       return;
     }
 
-    if (a === 'ibo') { iSel = id; fill(); window.scrollTo(0, 0); return; }
-    if (a === 'ibk') { iSel = ''; fill(); window.scrollTo(0, 0); return; }
+    if (a === 'ibm') {
+      ibMenu = !ibMenu;
+      var km = $('.kmenu'); if (km) km.hidden = !ibMenu;
+      b.setAttribute('aria-expanded', String(ibMenu));
+      return;
+    }
+    if (a === 'ibo') { ibMenu = false; iSel = id; fill(); window.scrollTo(0, 0); return; }
+    if (a === 'ibk') { ibMenu = false; iSel = ''; fill(); window.scrollTo(0, 0); return; }
     if (a === 'ibu') { unduhRekapIB(id); return; }
     if (a === 'ibua') { unduhRekapSemuaIB(); return; }
     if (a === 'ibr') { var ir = IUR.filter(function (x) { return x.id === id; })[0]; if (ir) salin(teksRingkasIB(ir), b); return; }
@@ -1785,7 +1825,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (a === 'pen') { edBuka = (edBuka === id) ? '' : id; memEd = null; gambarAnggota(); return; }
     if (a === 'fsim' && isHost) { simpanFitur(); return; }
     if (a === 'ibc') { qPre = iSel; tab = 'catat'; show(); window.scrollTo(0, 0); return; }
-    if (a === 'ibt') { tutupIB(id); return; }
+    if (a === 'ibt') { ibMenu = false; tutupIB(id); return; }
     if (a === 'ibh' && isHost) { hapusIB(id); return; }
     if (a === 'ibp') { hapusBayarIB(id); return; }
     if (a === 'ibx') { hapusKeluarIB(id); return; }
@@ -1896,13 +1936,13 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     var lama = BAYAR && BAYAR.nomor ? BAYAR.dompet + ' ' + samar(BAYAR.nomor) + ' menjadi ' : '';
     bayarLangkah = 0;
     simpan(function (b) { b.set(db.doc('cfg/bayar'), { dompet: d, nomor: n, an: an, ts: Date.now() }); },
-      lama ? 'Ubah cara bayar' : 'Atur cara bayar', lama + d + ' ' + samar(n));
+      lama ? 'Ubah metode bayar' : 'Atur metode bayar', lama + d + ' ' + samar(n));
   }
   function hapusBayar() {
     if (!BAYAR || !arm('bhap')) return;
     var d = BAYAR.dompet;
     bayarLangkah = 0;
-    simpan(function (b) { b.delete(db.doc('cfg/bayar')); }, 'Hapus cara bayar', d);
+    simpan(function (b) { b.delete(db.doc('cfg/bayar')); }, 'Hapus metode bayar', d);
   }
 
   function ubahIuran() {
@@ -1936,7 +1976,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       ? 'Pengingat kas (' + bln(cur()) + '). Yang belum lunas:\n' +
         belum.map(function (m, i) {
           return (i + 1) + '. ' + m.nama + (m.nim ? ' (' + m.nim + ')' : '') + ' - kurang ' + rp(m.kurang);
-        }).join('\n') + (BAYAR && BAYAR.nomor ? '\nCara bayar: lihat di aplikasi, lalu konfirmasi ke bendahara dengan bukti transfer.' : '') + '\nTerima kasih.'
+        }).join('\n') + (BAYAR && BAYAR.nomor ? '\nMetode bayar: lihat di aplikasi, lalu konfirmasi ke bendahara dengan bukti transfer.' : '') + '\nTerima kasih.'
       : 'Semua anggota sudah lunas.';
   }
 
@@ -2407,14 +2447,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (belum <= 0) return null;
     return { i: i, d: d, belum: belum, kurang: sum(r.rows, function (x) { return Math.max(0, i.per - x.c); }) };
   }
-  function bannerTenggatList() {
-    var L = IUR.map(mendesakI).filter(Boolean).sort(function (a, b) { return a.d - b.d || (b.i.ts || 0) - (a.i.ts || 0); });
-    if (!L.length) return '';
-    var lewat = L.filter(function (x) { return x.d < 0; }).length;
-    var judul = L.length + ' iuran ' + (lewat === L.length ? 'lewat tenggat' : (lewat ? 'mendekati atau lewat tenggat' : 'mendekati tenggat'));
-    return '<div class="alert red" role="button" tabindex="0" data-ibal="buka" data-id="' + L[0].i.id + '">' + judul +
-      ' &middot; ' + esc(L[0].i.nama) + ' (' + waktuTenggat(L[0].d) + '). Lihat detail.</div>';
-  }
   function bannerTenggatDetail(i) {
     var x = mendesakI(i);
     if (!x) return '';
@@ -2425,16 +2457,17 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   /* ---- Beranda ---- */
   function kartuIB(i) {
     var r = ringI(i), pct = r.target ? Math.min(100, Math.round(r.terkumpul / r.target * 100)) : 0;
-    var lewat = i.tenggat && i.tenggat < today() && !i.tutup && (i.per > 0 ? r.lunas < r.n : false);
-    return '<button type="button" class="card ibk" data-a="ibo" data-id="' + i.id + '">' +
+    var u = mendesakI(i);   /* mendesak: berjalan, ada peserta belum lunas, tenggat H-7 sampai lewat */
+    return '<button type="button" class="card ibk' + (u ? ' urg' : '') + '" data-a="ibo" data-id="' + i.id + '">' +
       '<span class="ibt"><b>' + esc(i.nama) + '</b>' +
-        (i.tutup ? '<span class="chip off">ditutup</span>' : (lewat ? '<span class="chip belum">lewat tenggat</span>' : '')) + '</span>' +
+        (i.tutup ? '<span class="chip off">ditutup</span>' : '') + '</span>' +
       '<span class="sm">' + (i.per > 0
         ? rp(r.terkumpul) + ' dari ' + rp(r.target) + ' &middot; ' + r.lunas + ' dari ' + r.n + ' lunas (' + rp(i.per) + ' per anggota)'
         : rp(r.terkumpul) + ' terkumpul &middot; ' + r.lunas + ' dari ' + r.n + ' sudah bayar (nominal bebas)') + '</span>' +
       (i.per > 0 ? '<span class="track"><i style="width:' + pct + '%"></i></span>' : '') +
       (r.keluar > 0 || i.tutup ? '<span class="sm">Keluar ' + rp(r.keluar) + ' &middot; sisa <b>' + rp(r.sisa) + '</b></span>' : '') +
-      (i.tenggat ? '<span class="sm">Tenggat ' + esc(tglID(i.tenggat)) + '</span>' : '') +
+      (i.tenggat ? '<span class="sm' + (u ? ' tg' : '') + '">Tenggat ' + esc(tglID(i.tenggat)) +
+        (u ? ' &middot; ' + (u.d > 0 ? u.d + ' hari lagi' : (u.d === 0 ? 'hari ini' : 'Lewat tenggat ' + (-u.d) + ' hari')) : '') + '</span>' : '') +
     '</button>';
   }
 
@@ -2447,7 +2480,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
         '<span class="big mono">' + rp(sum(IP, jml)) + '</span>' +
         '<p class="sm">' + buka.length + ' iuran berjalan' + (tutup.length ? ' &middot; ' + tutup.length + ' ditutup' : '') +
           (IX.length ? ' &middot; keluar ' + rp(sum(IX, jml)) + ' &middot; sisa <b>' + rp(sum(IP, jml) - sum(IX, jml)) + '</b>' : '') + '</p></div>' +
-      bannerTenggatList() +
       (buka.map(kartuIB).join('') ||
         '<div class="card"><p class="sm">Belum ada iuran berjalan.' + (canEdit ? ' Buat di tab Catat.' : '') + '</p></div>') +
       (tutup.length ? '<h2 style="margin-top:6px">Iuran ditutup</h2>' + tutup.map(kartuIB).join('') : '') +
@@ -2473,7 +2505,15 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     }).join('');
     $('#sum').innerHTML = bantuDev() +
       '<button class="lnk" type="button" data-a="ibk" style="align-self:flex-start">&larr; Semua iuran</button>' +
-      '<div class="card"><h2>' + esc(i.nama) + (i.tutup ? ' <span class="chip off">ditutup</span>' : '') + '</h2>' +
+      '<div class="card ibmain"><div class="ibhd"><h2>' + esc(i.nama) + (i.tutup ? ' <span class="chip off">ditutup</span>' : '') + '</h2>' +
+        (canEdit
+          ? '<div class="kwrap"><button type="button" class="kebab" data-a="ibm" aria-haspopup="menu" aria-expanded="' + ibMenu + '" aria-label="Menu iuran">' +
+              '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>' +
+              '<div class="kmenu" role="menu"' + (ibMenu ? '' : ' hidden') + '>' +
+                '<button type="button" role="menuitem" data-a="ibt" data-id="' + i.id + '">' + (i.tutup ? 'Buka kembali' : 'Tutup iuran') + '</button>' +
+                (isHost ? '<button type="button" role="menuitem" class="del" data-a="ibh" data-id="' + i.id + '">' + (armed === 'ibh' + i.id ? 'Yakin hapus?' : 'Hapus iuran') + '</button>' : '') +
+              '</div></div>'
+          : '') + '</div>' +
         '<span class="lab">Terkumpul</span><span class="big mono">' + rp(r.terkumpul) + '</span>' +
         '<p class="sm">' + (i.per > 0
           ? 'dari target ' + rp(r.target) + ' (' + rp(i.per) + ' &times; ' + r.n + ' anggota) &middot; ' + r.lunas + ' lunas'
@@ -2485,13 +2525,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
           '<div><span class="lab in">Sisa</span><div class="mono ' + (r.sisa < 0 ? 'out' : '') + '">' + rp(r.sisa) + '</div></div>' +
         '</div>' +
         (i.tutup ? '<p class="sm">Iuran ditutup: pembayaran dan pengeluaran dikunci. Buka kembali bila perlu mengubah.</p>' : '') +
-        (canEdit
-          ? '<div class="row">' +
-              (i.tutup ? '' : '<button class="btn" type="button" data-a="ibc">Catat pembayaran</button>') +
-              '<button class="btn ghost" type="button" data-a="ibt" data-id="' + i.id + '">' + (i.tutup ? 'Buka kembali' : 'Tutup iuran') + '</button>' +
-              (isHost ? '<button class="btn ghost del" type="button" data-a="ibh" data-id="' + i.id + '">' + (armed === 'ibh' + i.id ? 'Yakin hapus?' : 'Hapus iuran') + '</button>' : '') +
-            '</div>'
-          : '') +
+        (canEdit && !i.tutup ? '<button class="btn" type="button" data-a="ibc">Catat pembayaran</button>' : '') +
       '</div>' +
       bannerTenggatDetail(i) +
       '<div class="card"><h2>Rekap</h2><p class="sm">Bagikan atau simpan ringkasan iuran ini.</p>' +
@@ -2708,6 +2742,14 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     var m = M.filter(function (x) { return x.id === p.mid; })[0] || {}, i = IUR.filter(function (x) { return x.id === p.iid; })[0] || {};
     simpan(function (b) { b.delete(db.doc('ipay/' + id)); }, 'Hapus bayar iuran', (m.nama || '?') + ' · ' + (i.nama || '?') + ' ' + rp(p.jumlah) + ' tgl ' + p.tgl);
   }
+  function tutupMenuIB() {
+    ibMenu = false;
+    var km = $('.kmenu'); if (km) km.hidden = true;
+    var kb = $('.kebab'); if (kb) kb.setAttribute('aria-expanded', 'false');
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && ibMenu) { var kb = $('.kebab'); tutupMenuIB(); if (kb) kb.focus(); }
+  });
   function tutupIB(id) {
     var i = IUR.filter(function (x) { return x.id === id; })[0];
     if (!i) return;
@@ -2719,7 +2761,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (!i) return;
     var pay = IP.filter(function (x) { return x.iid === id; }), keluarIni = IX.filter(function (x) { return x.iid === id; });
     if (pay.length + keluarIni.length > 450) { note('Iuran ini punya terlalu banyak pembayaran untuk dihapus sekaligus. Tutup saja, atau hubungi Dev.', 'red'); return; }
-    iSel = '';
+    iSel = ''; ibMenu = false;
     simpan(function (b) { b.delete(db.doc('iur/' + id)); pay.forEach(function (p) { b.delete(db.doc('ipay/' + p.id)); }); keluarIni.forEach(function (x) { b.delete(db.doc('iexp/' + x.id)); }); },
       'Hapus iuran', i.nama + ' (' + pay.length + ' pembayaran dan ' + keluarIni.length + ' pengeluaran ikut terhapus)');
   }
@@ -2765,7 +2807,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   /* =========================================================
    * Pengaturan: daftar -> sub-halaman
    * ========================================================= */
-  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Nominal kas', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Cara bayar', fitur: 'Fitur room', kelola: 'Kelola room' };
+  var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Nominal kas', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Metode bayar', fitur: 'Fitur room', kelola: 'Kelola room' };
   /* halaman yang dibuka dari folder "Kelola room" (tombol Kembali menuju folder itu) */
   var KELOLA_ISI = ['fitur', 'pengurus', 'bayar', 'anggota', 'iuran', 'data'];
   var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'];
@@ -2885,7 +2927,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       var it = [['akun', 'Akun', u0 ? esc(u0.email || 'Sudah masuk') : 'Belum masuk'],
                 ['room', 'Room', KODE ? ((RNAMA || '') + ' · ' + KODE) : 'Masuk atau buat room']];
       if (isDev) it.push(['semua', 'Semua room', 'Khusus Dev: lihat dan masuk ke room mana pun']);
-      if (isHost || canEdit) it.push(['kelola', 'Kelola room', isHost ? 'Fitur, pengurus, cara bayar, anggota, dan data' : 'Anggota, nominal kas, dan data']);
+      if (isHost || canEdit) it.push(['kelola', 'Kelola room', isHost ? 'Fitur, pengurus, metode bayar, anggota, dan data' : 'Anggota, nominal kas, dan data']);
       it.push(['tampilan', 'Tampilan', 'Gaya UI, tema warna, dan ukuran teks']);
       it.push(['tentang', 'Tentang', 'Versi dan privasi']);
       h = menuSet(it);
@@ -2893,7 +2935,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       var ff = fitur(), ik = [];
       if (isHost) ik.push(['fitur', 'Fitur room', ff.kas && ff.iuran ? 'Kas dan ' + NAMA_IB : (ff.iuran ? NAMA_IB : 'Kas')]);
       if (isHost) ik.push(['pengurus', 'Pengurus', 'Bendahara dan Host']);
-      if (isHost) ik.push(['bayar', 'Cara bayar', BAYAR && BAYAR.nomor ? BAYAR.dompet + ' \u00b7 sudah diatur' : 'Nomor dompet digital untuk kas']);
+      if (isHost) ik.push(['bayar', 'Metode bayar', BAYAR && BAYAR.nomor ? BAYAR.dompet + ' \u00b7 sudah diatur' : 'Nomor dompet digital untuk kas']);
       if (canEdit) {
         ik.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
         if (ff.kas) ik.push(['iuran', 'Nominal kas', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
@@ -2978,7 +3020,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             '<button class="btn" type="button" data-a="fsim">Simpan</button><p id="fmsg" class="err"></p></div>';
     } else if (sub === 'bayar') {
       var B = BAYAR || {};
-      h = '<div class="card"><h2>Cara bayar kas</h2>' +
+      h = '<div class="card"><h2>Metode bayar</h2>' +
             '<p class="sm">Nomor dompet digital tempat anggota membayar. Sebaiknya satu dompet khusus kas, bukan nomor HP utama. Anggota baru melihat nomornya setelah membaca tiga pengingat. Nomor tidak dicantumkan di Riwayat. Hanya Host yang bisa mengubah.</p>' +
             '<input id="bd" list="bdl" placeholder="Nama dompet digital (mis. Dana)" maxlength="30" autocomplete="off" value="' + esc(B.dompet || '') + '">' +
             '<datalist id="bdl"><option value="Dana"><option value="OVO"><option value="GoPay"><option value="ShopeePay"><option value="LinkAja"></datalist>' +
@@ -3055,7 +3097,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 3.8</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 4.0</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -3321,7 +3363,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   function bukaLogin() { $('#lgn').hidden = false; $('#lgE').focus(); }
   function tutupLogin() { $('#lgn').hidden = true; $('#lgS').value = ''; $('#lgErr').textContent = ''; }
 
-  $('#role').onclick = function () { openSet('akun'); };
   $('#gear').onclick = function () { openSet(''); };
   $('#lgBatal').onclick = tutupLogin;
 
