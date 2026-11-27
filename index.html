@@ -15,7 +15,8 @@ window.kkFont(_g); } catch (e) {}</script>
 <link rel="apple-touch-icon" href="icon_192x192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"></noscript>
 
 <style>
 /* ===== Tema ===== */
@@ -729,6 +730,8 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 /* penyesuaian kontras (>= 4,5) untuk dua gaya yang paletnya berbeda */
 :root[data-ui="bauhaus"] .card.ibk.urg { --out: #B01E1E; }
 :root[data-ui="glassmorphism"] .card.ibk.urg { background: rgba(120, 20, 30, .45); --out: #FFC9C4; }
+/* banner tunggakan Kas di Glassmorphism: latar marun sama dengan kartu iuran mendesak + garis tepi merah lembut transparan */
+:root[data-ui="glassmorphism"] .alert.red.tung { background: rgba(120, 20, 30, .45); border: 1px solid rgba(255, 150, 145, .38); color: #FFC9C4; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -748,6 +751,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   <nav id="nav"></nav>
   <div class="seg" id="modebar" role="group" aria-label="Tampilan" hidden></div>
   <div id="note"></div>
+  <div id="upd" class="alert" hidden>Versi baru siap. <button class="lnk" type="button" id="updBtn">Muat ulang</button></div>
   <div id="stale" class="alert" hidden>Menampilkan data yang tersimpan di HP. Belum tersambung ke server, jadi angkanya mungkin belum yang terbaru.</div>
   <div id="view"></div>
   <noscript><div class="alert red">Aplikasi ini membutuhkan JavaScript.</div></noscript>
@@ -1188,7 +1192,17 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   function unduhCadangan() {
     var isi = { versi: 2, room: RNAMA, kode: KODE, waktu: new Date().toISOString(), cfg: CFG, fitur: FITUR, bayar: BAYAR, members: M, pay: P, exp: X, log: LOG, iur: IUR, ipay: IP, iexp: IX };
     unduh(namaBerkas('json'), JSON.stringify(isi, null, 1), 'application/json');
-    $('#dmsg').textContent = 'Cadangan diunduh: ' + M.length + ' anggota, ' + P.length + ' catatan kas, ' + X.length + ' catatan lain, ' + IUR.length + ' iuran bersama.';
+    var dm = $('#dmsg'); if (dm) dm.textContent = 'Cadangan diunduh: ' + M.length + ' anggota, ' + P.length + ' catatan kas, ' + X.length + ' catatan lain, ' + IUR.length + ' iuran bersama.';
+  }
+  function teksRingkasKas() {
+    var saldo = sum(P, jml) + sum(X.filter(function (x) { return x.kind === 'masuk'; }), jml) - sum(X.filter(function (x) { return x.kind !== 'masuk'; }), jml);
+    var akt = D.filter(isAktif), belum = akt.filter(function (m) { return m.kurang > 0; });
+    var t = [(RNAMA ? RNAMA + ' · ' : '') + 'Rekap kas', 'Per ' + tglID(today()),
+      'Saldo di tangan bendahara: ' + rp(saldo),
+      (akt.length - belum.length) + ' dari ' + akt.length + ' anggota lunas' + (belum.length ? ' · total tunggakan ' + rp(sum(belum, function (m) { return m.kurang; })) : '')];
+    if (belum.length) t.push('', 'Belum lunas (' + belum.length + '):', belum.slice().sort(byNama).map(function (m) { return '- ' + m.nama + ' (kurang ' + rp(m.kurang) + ')'; }).join('\n'));
+    else t.push('', 'Semua anggota sudah lunas.');
+    return t.join('\n');
   }
   function unduhRekap() {
     var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
@@ -1197,7 +1211,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       baris.push([m.nama, m.nim, isAktif(m) ? (m.kurang > 0 ? 'Belum lunas' : 'Lunas') : 'Nonaktif', m.mulai, m.paid, m.tagih, m.kurang, m.dimuka].map(q).join(','));
     });
     unduh(namaBerkas('csv'), '﻿' + baris.join('\r\n'), 'text/csv;charset=utf-8');
-    $('#dmsg').textContent = 'Rekap kas ' + D.length + ' anggota diunduh (bisa dibuka di Excel).';
+    note('Rekap kas ' + D.length + ' anggota diunduh (bisa dibuka di Excel).');
   }
 
   function tulisPeran(nr, aksi, ket) {
@@ -1611,7 +1625,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
         '</div>' +
       '</div>' +
       (belum.length
-        ? '<div class="alert red">' + belum.length + ' anggota belum lunas &middot; total tunggakan ' + rp(tunggakan) + '. Lihat tab Anggota.</div>'
+        ? '<div class="alert red tung">' + belum.length + ' anggota belum lunas &middot; total tunggakan ' + rp(tunggakan) + '. Lihat tab Anggota.</div>'
         : '<div class="alert green">Semua anggota aktif sudah lunas sampai ' + bln(cur()) + '.</div>') +
       '<div class="card"><h2>Kas ' + bln(sk) + '</h2>' +
         (ditagih.length
@@ -1819,6 +1833,8 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (a === 'ibk') { ibMenu = false; iSel = ''; fill(); window.scrollTo(0, 0); return; }
     if (a === 'ibu') { unduhRekapIB(id); return; }
     if (a === 'ibua') { unduhRekapSemuaIB(); return; }
+    if (a === 'xc') { unduhRekap(); return; }
+    if (a === 'xs') { salin(teksRingkasKas(), b); return; }
     if (a === 'ibr') { var ir = IUR.filter(function (x) { return x.id === id; })[0]; if (ir) salin(teksRingkasIB(ir), b); return; }
 
     if (!db || !canEdit) return;
@@ -1830,7 +1846,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (a === 'ibp') { hapusBayarIB(id); return; }
     if (a === 'ibx') { hapusKeluarIB(id); return; }
     if (a === 'xj') { unduhCadangan(); return; }
-    if (a === 'xc') { unduhRekap(); return; }
     if (a === 'sl' && isHost) { salinDataLama(b); return; }
     if (a === 'pad' && isHost) { tambahPengurus(); return; }
     if (a === 'prm' && isHost) { hapusPengurus(id); return; }
@@ -2286,6 +2301,9 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       '<p class="sm">Masuk = uang yang dibayar pada ' + SATUAN() + ' itu; tulisan biru kecil = bagian yang sudah dibayar lebih awal untuk ' + SATUAN() + ' itu. Saldo ' + SATUAN() + ' berjalan = seluruh uang di tangan bendahara (termasuk bayar di muka).</p>' +
       (lainTotal > 0 ? '<p class="sm">Kolom Masuk sudah termasuk pemasukan lain (hadiah, donasi) sebesar ' + rp(lainTotal) + '.</p>' : '') +
       '</div>' +
+      '<div class="card"><h2>Rekap kas</h2><p class="sm">Bagikan atau simpan status kas semua anggota.</p>' +
+        '<div class="row"><button class="btn ghost" type="button" data-a="xs">Salin ringkasan</button>' +
+        '<button class="btn ghost" type="button" data-a="xc">Unduh rekap (CSV)</button></div></div>' +
       '<div class="card"><h2>Riwayat perubahan</h2>' +
         '<p class="sm">Jejak 100 perubahan terakhir, termasuk yang dibatalkan. Angka kas dihitung dari data yang berlaku.</p>' +
         '<div class="chips">' + KAT.map(function (k) {
@@ -2809,7 +2827,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
    * ========================================================= */
   var SET_JUDUL = { akun: 'Akun', room: 'Room', pengurus: 'Pengurus', anggota: 'Kelola anggota', iuran: 'Nominal kas', data: 'Data', tampilan: 'Tampilan', tentang: 'Tentang', semua: 'Semua room', bayar: 'Metode bayar', fitur: 'Fitur room', kelola: 'Kelola room' };
   /* halaman yang dibuka dari folder "Kelola room" (tombol Kembali menuju folder itu) */
-  var KELOLA_ISI = ['fitur', 'pengurus', 'bayar', 'anggota', 'iuran', 'data'];
+  var KELOLA_ISI = ['fitur', 'pengurus', 'bayar', 'anggota', 'iuran'];
   var TEMA = ['auto', 'light', 'dark', 'hitam', 'biru', 'mawar', 'eukaliptus', 'nordik'];
   var TEMA_BAR = { light: '#F2F4F1', dark: '#0F1613', hitam: '#000000', biru: '#222F4C', mawar: '#F6E7E3', eukaliptus: '#EBF0EC', nordik: '#EDF1F4' };
   var UKURAN = ['75', '88', '100', '118'];
@@ -2927,8 +2945,9 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       var it = [['akun', 'Akun', u0 ? esc(u0.email || 'Sudah masuk') : 'Belum masuk'],
                 ['room', 'Room', KODE ? ((RNAMA || '') + ' · ' + KODE) : 'Masuk atau buat room']];
       if (isDev) it.push(['semua', 'Semua room', 'Khusus Dev: lihat dan masuk ke room mana pun']);
-      if (isHost || canEdit) it.push(['kelola', 'Kelola room', isHost ? 'Fitur, pengurus, metode bayar, anggota, dan data' : 'Anggota, nominal kas, dan data']);
+      if (isHost || canEdit) it.push(['kelola', 'Kelola room', isHost ? 'Fitur, pengurus, metode bayar, dan anggota' : 'Anggota dan nominal kas']);
       it.push(['tampilan', 'Tampilan', 'Gaya UI, tema warna, dan ukuran teks']);
+      if (canEdit) it.push(['data', 'Data', 'Cadangan universal (JSON)']);
       it.push(['tentang', 'Tentang', 'Versi dan privasi']);
       h = menuSet(it);
     } else if (sub === 'kelola') {
@@ -2939,7 +2958,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       if (canEdit) {
         ik.push(['anggota', 'Kelola anggota', 'Tambah dan impor anggota']);
         if (ff.kas) ik.push(['iuran', 'Nominal kas', 'Sekarang ' + rp(nominal(cur())) + ' per ' + SATUAN()]);
-        ik.push(['data', 'Data', 'Cadangan dan rekap kas']);
       }
       h = menuSet(ik);
     } else if (sub === 'semua') {
@@ -3058,12 +3076,9 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             '<div class="row"><input id="cb" inputmode="numeric" placeholder="Kas awal"><button class="btn" type="button" data-a="sb">Simpan</button></div>' +
           '</div>';
     } else if (sub === 'data') {
-      h = '<div class="card"><h2>Cadangan</h2>' +
-            '<p class="sm">Simpan salinan semua data room ini (anggota, kas, pengeluaran, riwayat) sebagai berkas. Simpan di tempat aman, misalnya Drive.</p>' +
-            '<button class="btn" type="button" data-a="xj">Unduh cadangan (JSON)</button></div>' +
-          '<div class="card"><h2>Rekap kas</h2>' +
-            '<p class="sm">Daftar anggota beserta status dan jumlah kurang, bisa dibuka di Excel atau Sheets.</p>' +
-            '<button class="btn ghost" type="button" data-a="xc">Unduh rekap (CSV)</button><p id="dmsg" class="sm"></p></div>';
+      h = '<div class="card"><h2>Cadangan universal</h2>' +
+            '<p class="sm">Simpan salinan utuh semua data room ini sebagai satu berkas JSON: kas rutin, ' + (fitur().iuran ? 'semua ' + NAMA_IB.toLowerCase() + ' beserta peserta dan pengeluarannya, ' : '') + 'anggota, pengaturan, dan riwayat transaksi. Simpan di tempat aman, misalnya Drive.</p>' +
+            '<button class="btn" type="button" data-a="xj">Unduh cadangan (JSON)</button><p id="dmsg" class="sm"></p></div>';
     } else if (sub === 'tampilan') {
       var sw = {
         auto: 'linear-gradient(135deg,#F2F4F1 50%,#0F1613 50%)',
@@ -3097,7 +3112,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 4.0</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 4.3</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -3529,7 +3544,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       var pertama = true, simpanData = function (a) { if (c === 'iur') IUR = a; else if (c === 'ipay') IP = a; else IX = a; };
       db.collection(c).onSnapshot(function (sn) {
         var ambil = function () { simpanData(sn.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); })); };
-        if (pertama) { pertama = false; ambil(); IBMUAT[c] = true; fill(); return; }
+        if (pertama) { pertama = false; ambil(); IBMUAT[c] = true; if (mode() === 'iuran' || tab === 'anggota') fill(); return; }
         if (!sn.docChanges().length) return;
         ambil();
         if (mode() === 'iuran' || tab === 'anggota') fill();
@@ -3548,6 +3563,10 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     });
+    var adaKontrol = !!navigator.serviceWorker.controller, bannerBaru = function () { var u = $('#upd'); if (u) u.hidden = false; };
+    navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.t === 'baru') bannerBaru(); });
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (adaKontrol) bannerBaru(); adaKontrol = true; });
+    document.addEventListener('click', function (e) { if (e.target && e.target.id === 'updBtn') location.reload(); });
   }
 })();
 /* ===== Pemilih (pengganti daftar pilihan bawaan HP): lembar bawah bertema ===== */
@@ -3624,7 +3643,11 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (tombolAsal) tombolAsal.focus();
   }
   new MutationObserver(semua).observe(document.body, { childList: true, subtree: true });
-  setInterval(function () { Array.prototype.forEach.call(document.querySelectorAll('select[data-e]'), sinkron); }, 500);
+  /* Perubahan lewat kode (select.value = ..., selectedIndex = ...) tidak memicu event; setter dibungkus agar label tombol ikut sinkron tanpa polling. */
+  ['value', 'selectedIndex'].forEach(function (nm) {
+    var d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, nm); if (!d || !d.set) return;
+    Object.defineProperty(HTMLSelectElement.prototype, nm, { configurable: true, enumerable: d.enumerable, get: d.get, set: function (v) { d.set.call(this, v); if (this._btn) sinkron(this); } });
+  });
   semua();
 })();
 </script>
