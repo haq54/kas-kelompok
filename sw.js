@@ -1,4 +1,4 @@
-var V='kaskita-v33',SHELL=['./','index.html'];
+var V='kaskita-v34',SHELL=['./','index.html'];
 /* Tiap berkas dimasukkan sendiri-sendiri: satu berkas yang gagal tidak lagi membatalkan seluruh pemasangan. */
 self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(function(c){return Promise.all(SHELL.map(function(u){return c.add(new Request(u,{cache:'reload'})).catch(function(){})}))}).then(function(){return self.skipWaiting()}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n!==V}).map(function(n){return caches.delete(n)}))}).then(function(){return self.clients.claim()}))});
