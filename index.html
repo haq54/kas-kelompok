@@ -109,31 +109,7 @@ h1 { font: 700 calc(1.6rem * var(--fz, 1))/1.2 var(--fd); margin: 0; }
 h2 { font: 600 calc(1.05rem * var(--fz, 1))/1.3 var(--fd); margin: 0; }
 
 .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
-/* ===== Kotak sapaan (header) ===== */
-.hero {
-  position: relative; display: flex; flex-direction: column; gap: 12px;
-  margin: calc(-20px - env(safe-area-inset-top, 0px)) calc(-1 * max(14px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(14px, env(safe-area-inset-left, 0px)));
-  padding: calc(14px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) 12px max(18px, env(safe-area-inset-left, 0px));
-  background: var(--surface); color: var(--ink);
-  border: var(--bw) solid var(--line); border-top: 0; border-radius: 0 0 30px 30px; box-shadow: var(--sh);
-}
-.hero.mini { gap: 0; padding-bottom: 12px; border-radius: 0 0 20px 20px; }
-.hero.mini .hero-main, .hero.mini .grip { display: none; }
-.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.rpill {
-  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 64%;
-  background: var(--field); color: var(--ink); border: var(--bw) solid var(--line); border-radius: 99px;
-  padding: 5px 10px 5px 9px; font-size: calc(.85rem * var(--fz, 1)); font-weight: 600; cursor: pointer;
-}
-.rpill svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.rpill #ttl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hero-main { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.mascot { width: 78px; height: 78px; flex: none; }
-.mascot svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.hero-txt { display: flex; flex-direction: column; min-width: 0; }
-.sapa { color: var(--muted); font-size: calc(.9rem * var(--fz, 1)); }
-.hnama { font: 700 calc(1.4rem * var(--fz, 1))/1.25 var(--fd); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.grip { align-self: center; width: 38px; height: 4px; border-radius: 4px; background: var(--muted); opacity: .4; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
 .dvc { padding: 0; gap: 0; overflow: hidden; margin-top: 8px; }
 .dvr { display: flex; align-items: stretch; }
 .dvmain { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 14px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
@@ -149,6 +125,9 @@ h2 { font: 600 calc(1.05rem * var(--fz, 1))/1.3 var(--fd); margin: 0; }
   background: none; border: 1px solid var(--line); border-radius: 99px;
   padding: 2px 10px; cursor: pointer;
 }
+/* Badge peran: hanya informasi (bukan tombol) */
+#role { cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
+#gear[hidden] { display: none; }
 :root[data-ui="neobrutalism"] #role { box-shadow: none; }
 
 /* ===== Navigasi ===== */
@@ -610,8 +589,8 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 :root[data-ui="manga"] nav button { background: #fff; border: 2px solid #000; }
 :root[data-ui="manga"] nav button[aria-pressed=true], :root[data-ui="manga"] .seg button[aria-pressed=true] { background: #E60012; color: #fff; border: 2px solid #000; }
 :root[data-ui="manga"] .seg button { border: 2px solid transparent; }
-:root[data-ui="manga"] .hero { border-bottom: 3px solid #000; background: repeating-linear-gradient(45deg, rgba(230, 0, 18, .16) 0 1px, transparent 1px 6px); }
-:root[data-ui="manga"] .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: #E60012; border-radius: 0 0 26px 26px; }
+:root[data-ui="manga"] header { border-bottom: 3px solid #000; padding-bottom: 6px; background: repeating-linear-gradient(45deg, rgba(230, 0, 18, .16) 0 1px, transparent 1px 6px); }
+:root[data-ui="manga"] header::after { content: ""; flex-basis: 100%; height: 5px; margin-top: 2px; background: #E60012; }
 :root[data-ui="manga"] input, :root[data-ui="manga"] select, :root[data-ui="manga"] textarea, :root[data-ui="manga"] .selbtn, :root[data-ui="manga"] .btn.ghost, :root[data-ui="manga"] .chips button, :root[data-ui="manga"] .themes button, :root[data-ui="manga"] .sizes button { border: 2px solid #000; }
 :root[data-ui="manga"] .btn:not(.ghost) { background: #E60012; border: 2px solid #000; }
 :root[data-ui="manga"] .btn:active { transform: translate(3px, 3px); box-shadow: none; }
@@ -762,20 +741,12 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 
 <body>
 <div class="wrap">
-  <header class="hero" id="hero">
-    <div class="hero-top">
-      <button type="button" class="rpill" id="rpill" aria-label="Ganti atau masuk room">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.8C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.5"/></svg>
-        <span id="ttl">Kaskita</span>
-        <svg class="cv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <button type="button" class="badge" id="role">Memuat…</button>
+  <header>
+    <h1 id="ttl">Kaskita</h1>
+    <div class="hb">
+      <button type="button" class="badge" id="gear">Pengaturan</button>
+      <span class="badge" id="role">Memuat…</span>
     </div>
-    <div class="hero-main">
-      <div class="mascot" id="mascot" aria-hidden="true"></div>
-      <div class="hero-txt"><span class="sapa" id="sapa"></span><b class="hnama" id="hnama"></b></div>
-    </div>
-    <i class="grip" aria-hidden="true"></i>
   </header>
   <nav id="nav"></nav>
   <div class="seg" id="modebar" role="group" aria-label="Tampilan" hidden></div>
@@ -1115,7 +1086,8 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
       var ka = 'kk-aud-' + KODE;
       if (Date.now() - parseInt(lsGet(ka) || '0', 10) > 30 * 60000) { lsSet(ka, String(Date.now())); audit(KODE, RNAMA, 'Masuk room', asli ? 'Dev membuka room (pengurus)' : 'Dev membuka room (mode lihat)'); }
     }
-    renderHero();
+    $('#role').textContent = namaPeran();
+    $('#role').className = 'badge' + (isDev ? ' dev' : '');
     if (!canEdit && tab === 'catat') tab = 'home';
     if (!canEdit && (sub === 'anggota' || sub === 'iuran' || sub === 'data')) sub = '';
     if (!isHost && !canEdit && sub === 'kelola') sub = '';
@@ -1486,56 +1458,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     if (document.fonts.ready) document.fonts.ready.then(pillSegarkan);
   }
 
-  /* ----- Kotak sapaan (header) ----- */
-  function labelPeran() { return isDev ? 'Dev' : isHost ? 'Host' : canEdit ? 'Bendahara' : 'Tamu'; }
-  function namaPengguna() {
-    var u = auth && auth.currentUser; if (!u) return 'Tamu';
-    var n = (u.displayName || (u.email || '').split('@')[0] || '').trim();
-    return n ? n.charAt(0).toUpperCase() + n.slice(1) : 'Pengguna';
-  }
-  function sapaan() {
-    var j = new Date().getHours();
-    return 'Selamat ' + (j < 11 ? 'Pagi' : j < 15 ? 'Siang' : j < 18 ? 'Sore' : 'Malam') + ',';
-  }
-  /** kacamata = Host/Bendahara/Dev; memelas = masih ada tunggakan; senang = semua lunas */
-  function ekspresi() {
-    if (isDev || isHost || canEdit) return 'kacamata';
-    return D.some(function (m) { return isAktif(m) && m.kurang > 0; }) ? 'memelas' : 'senang';
-  }
-  function maskotSvg(ex) {
-    var tk = 'fill="none" stroke="#4A2F05" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"';
-    var w = {
-      senang: '<path ' + tk + ' d="M26 40Q31 33 36 40M44 40Q49 33 54 40"/><path ' + tk + ' d="M32 50Q40 60 48 50"/>' +
-              '<circle cx="24" cy="50" r="4" fill="#F28B82" opacity=".6"/><circle cx="56" cy="50" r="4" fill="#F28B82" opacity=".6"/>',
-      memelas: '<circle cx="31" cy="41" r="3.4" fill="#4A2F05"/><circle cx="49" cy="41" r="3.4" fill="#4A2F05"/>' +
-               '<circle cx="32" cy="40" r="1" fill="#fff"/><circle cx="50" cy="40" r="1" fill="#fff"/>' +
-               '<path ' + tk + ' d="M25 36L36 31M55 36L44 31"/><path ' + tk + ' d="M32 57Q36 51 40 55Q44 59 48 53"/>' +
-               '<path d="M63 20Q57 29 63 33Q69 29 63 20Z" fill="#6EC1F2" stroke="#2E86C1" stroke-width="1.5"/>',
-      kacamata: '<rect x="23" y="33" width="15" height="11" rx="3.5" fill="#1B1B1B"/><rect x="42" y="33" width="15" height="11" rx="3.5" fill="#1B1B1B"/>' +
-                '<path d="M38 37H42" stroke="#1B1B1B" stroke-width="3"/><path d="M26 36L30 36M45 36L49 36" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>' +
-                '<path ' + tk + ' d="M33 52Q40 58 47 52"/>'
-    }[ex];
-    return '<svg viewBox="0 0 80 80" focusable="false"><circle cx="40" cy="43" r="31" fill="#D9A02B"/>' +
-      '<circle cx="40" cy="40" r="31" fill="#F6C343" stroke="#B7791F" stroke-width="3"/><circle cx="40" cy="40" r="25" fill="none" stroke="#E0A526" stroke-width="2"/>' +
-      '<path d="M20 26Q24 18 33 15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".55"/>' + w + '</svg>';
-  }
-  function renderHero() {
-    var h = $('#hero'); if (!h) return;
-    var kecil = tab !== 'home' || !KODE;
-    h.classList.toggle('mini', kecil);
-    var r = $('#role'); r.textContent = labelPeran(); r.className = 'badge' + (isDev ? ' dev' : '');
-    if (kecil) return;
-    var ex = ekspresi(), m = $('#mascot');
-    if (m.getAttribute('data-ex') !== ex) { m.setAttribute('data-ex', ex); m.innerHTML = maskotSvg(ex); }
-    $('#sapa').textContent = sapaan(); $('#hnama').textContent = namaPengguna();
-  }
-  $('#rpill').onclick = function () { if (tab === 'set' && sub === 'room') return; openSet('room'); };
-  $('#role').onclick = function () {
-    if (!isDev && !isHost && !canEdit) { if (auth && auth.currentUser) openSet('akun'); else bukaLogin(); }
-    else if (!(tab === 'set' && !sub)) openSet('');
-  };
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) renderHero(); });
-
   function renderNav() {
     var t = [['home', 'Beranda'], ['anggota', 'Anggota'], ['catat', 'Catat'], ['laporan', 'Laporan']];
     if (!canEdit) t.splice(2, 1);
@@ -1553,7 +1475,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
 
   /** Bangun kerangka tab aktif, lalu isi datanya. */
   function show() {
-    renderHero();
+    $('#gear').hidden = tab === 'set' && !!KODE;   /* di layar Pengaturan, tombol Kembali sudah ada */
     renderNav();
     var v = $('#view');
 
@@ -1626,7 +1548,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   function fill() {
     if (!siap()) return;
     derive();
-    renderHero();
     keepEd();
     if (tab === 'set') {
       if (sub === 'anggota' || sub === 'room' || sub === 'pengurus' || sub === 'semua' || sub === 'bayar' || sub === 'fitur') return;   // halaman berisi isian jangan dibangun ulang saat data berubah
@@ -2526,7 +2447,6 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     var perlu = { home: '#sum', anggota: '#list', catat: '#fz', laporan: '#rep' }[tab];
     if (!$(perlu)) { showI(); return; }
     derive();
-    renderHero();
     keepEd();
     ({ home: fHomeI, anggota: fAnggotaI, catat: fCatatI, laporan: fLaporanI })[tab]();
   }
@@ -3192,7 +3112,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
             }).join('') + '</div>' +
           '<p class="sm">Contoh: saldo kas <b class="mono">Rp 1.250.000</b></p></div>';
     } else if (sub === 'tentang') {
-      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 4.4</p>' +
+      h = '<div class="card"><p><b>Kaskita</b> &middot; versi 4.3</p>' +
           '<p class="sm">Catatan kas disimpan di server dan bisa dilihat siapa saja yang tahu kode room: nama anggota, NIM, dan status bayar. Hanya Host dan bendahara yang bisa mengubahnya. Jaga kode room, dan jangan membagikannya di tempat umum.</p></div>';
     }
     $('#view').innerHTML = '<div class="wrap"><div class="shead"><h2>' + (sub ? SET_JUDUL[sub] : 'Pengaturan') +
@@ -3458,6 +3378,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
   function bukaLogin() { $('#lgn').hidden = false; $('#lgE').focus(); }
   function tutupLogin() { $('#lgn').hidden = true; $('#lgS').value = ''; $('#lgErr').textContent = ''; }
 
+  $('#gear').onclick = function () { openSet(''); };
   $('#lgBatal').onclick = tutupLogin;
 
   $('#lgF').onsubmit = function (ev) {
@@ -3559,7 +3480,7 @@ th { font-size: calc(.72rem * var(--fz, 1)); color: var(--muted); text-transform
     }
 
     if (!fdb) {
-      $('#role').textContent = 'Tamu';
+      $('#role').textContent = 'Hanya lihat';
       $('#view').innerHTML = '<div class="alert red">Koneksi ke server gagal. Cek internet lalu muat ulang.</div>';
       return;
     }
